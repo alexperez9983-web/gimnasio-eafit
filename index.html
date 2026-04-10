@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gimnasio EAFIT — Sistema de gestión</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f3;--surface:#fff;--surface2:#f0efeb;--border:#e0dfd8;--border2:#c8c7c0;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;
+  --accent:#185FA5;--accent-bg:#E6F1FB;
+  --ok:#0F6E56;--ok-bg:#EAF3DE;
+  --warn:#854F0B;--warn-bg:#FAEEDA;
+  --danger:#A32D2D;--danger-bg:#FCEBEB;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--text);background:var(--bg);min-height:100vh}
+#loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:13px;color:var(--text2)}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:380px}
+.auth-logo{text-align:center;margin-bottom:1.5rem}
+.auth-logo h1{font-size:18px;font-weight:600;margin-bottom:3px}
+.auth-logo p{font-size:12px;color:var(--text2)}
+.auth-field{margin-bottom:11px}
+.auth-field label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500}
+.auth-field input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;outline:none;transition:border .15s}
+.auth-field input:focus{border-color:var(--accent)}
+.btn-auth{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;margin-top:4px}
+.btn-auth:hover{opacity:.88}
+.auth-msg{font-size:12px;margin-top:8px;text-align:center;min-height:18px}
+.auth-msg.err{color:var(--danger)}.auth-msg.ok{color:var(--ok)}
+.auth-links{display:flex;justify-content:space-between;margin-top:12px}
+.auth-link{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0}
+.auth-link:hover{text-decoration:underline}
+
+/* APP */
+#app-screen{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:50;gap:8px;flex-wrap:wrap}
+.topbar-left h1{font-size:15px;font-weight:600}
+.topbar-left p{font-size:11px;color:var(--text2)}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge-role{font-size:10px;padding:3px 9px;border-radius:var(--radius);font-weight:500}
+.badge-admin{background:var(--accent-bg);color:var(--accent)}
+.badge-trainer{background:var(--ok-bg);color:var(--ok)}
+.badge-recep{background:var(--purple-bg);color:var(--purple)}
+.btn-notif{position:relative;background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text2)}
+.notif-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#E24B4A;display:none}
+.btn-topbar{font-size:12px;color:var(--text2);background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;cursor:pointer}
+.btn-topbar:hover{background:var(--surface2)}
+.btn-topbar-danger{border-color:#E24B4A;color:var(--danger)}
+.btn-topbar-danger:hover{background:var(--danger-bg)}
+
+.module-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;gap:4px}
+.mod-btn{padding:8px 16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none}
+.mod-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.main{padding:1.25rem;flex:1}
+.tabs{display:flex;margin-bottom:1.25rem;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none;white-space:nowrap}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.metric-card{background:var(--surface2);border-radius:var(--radius);padding:.85rem 1rem}
+.metric-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:600}
+.metric-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.mv-ok{color:var(--ok)}.mv-warn{color:var(--warn)}.mv-danger{color:var(--danger)}
+
+/* ALERTS */
+.alert-box{background:var(--warn-bg);border:1px solid #EF9F27;border-radius:var(--radius);padding:8px 12px;font-size:12px;color:#633806;margin-bottom:.6rem}
+.alert-danger{background:var(--danger-bg);border:1px solid #E24B4A;border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--danger);margin-bottom:.6rem}
+.notif-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1rem}
+.notif-item{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.notif-item:last-child{border-bottom:none}
+.section-label{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+
+/* FILTERS */
+.filter-row{display:flex;gap:6px;margin-bottom:.85rem;flex-wrap:wrap;align-items:center}
+.filter-row select,.filter-row input{font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);height:30px;outline:none}
+.btn{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text);height:30px}
+.btn:hover{background:var(--surface2)}
+.btn-export{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-bg);height:30px}
+.btn-export:hover{opacity:.85}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;height:30px}
+.btn-primary:hover{opacity:.88}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.25rem;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+thead tr{background:var(--surface2)}
+th{padding:8px 10px;text-align:left;font-weight:500;color:var(--text2);font-size:11px;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.empty-state{text-align:center;padding:1.5rem;color:var(--text3);font-size:12px}
+
+/* BADGES */
+.badge{display:inline-block;padding:1px 7px;border-radius:var(--radius);font-size:10px;font-weight:500}
+.b-ok{background:var(--ok-bg);color:var(--ok)}
+.b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-danger{background:var(--danger-bg);color:var(--danger)}
+.b-plan{background:var(--accent-bg);color:var(--accent)}
+.b-val{background:var(--purple-bg);color:var(--purple)}
+.b-new{background:#E1F5EE;color:#085041}
+.b-renew{background:var(--accent-bg);color:var(--accent)}
+.b-check{background:var(--ok-bg);color:var(--ok)}
+.b-missing{background:var(--danger-bg);color:var(--danger)}
+
+/* AVATAR */
+.avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
+.coach-row{display:flex;align-items:center;gap:6px}
+
+/* FORM */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.25rem}
+.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:.85rem}
+.form-group label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{width:100%;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{resize:none;height:60px}
+.btn-submit{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 20px;font-size:12px;font-weight:500;cursor:pointer}
+.btn-submit:hover{opacity:.88}
+
+/* BTN-SM */
+.btn-sm{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:2px 7px;font-size:10px;cursor:pointer;color:var(--text2)}
+.btn-sm:hover{background:var(--surface2)}
+.btn-ok{border-color:#1D9E75;color:var(--ok)}.btn-ok:hover{background:var(--ok-bg)}
+.btn-edit{border-color:var(--accent);color:var(--accent)}.btn-edit:hover{background:var(--accent-bg)}
+.btn-del{border-color:#E24B4A;color:var(--danger)}.btn-del:hover{background:var(--danger-bg)}
+.btn-renew{border-color:var(--purple);color:var(--purple)}.btn-renew:hover{background:var(--purple-bg)}
+.actions-cell{display:flex;gap:3px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:14px;font-weight:600;margin-bottom:1rem}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.85rem}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:.5rem}
+.modal-danger{background:var(--danger-bg);border:1px solid #E24B4A;border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--danger);margin-bottom:1rem;line-height:1.6}
+
+/* CHARTS */
+.chart-section{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem}
+.chart-title{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-label{font-size:11px;color:var(--text2);width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-size:11px;font-weight:500;min-width:30px;text-align:right}
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.donut-legend{display:flex;flex-direction:column;gap:6px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-item{padding:8px;background:var(--surface2);border-radius:var(--radius);text-align:center}
+.stat-n{font-size:18px;font-weight:600}
+.stat-l{font-size:10px;color:var(--text2);margin-top:2px}
+.date-range-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:.85rem}
+.date-range-row label{font-size:11px;color:var(--text2)}
+.date-range-row input{font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none}
+
+/* PLANES MANAGER */
+.planes-list{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
+.plan-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
+.plan-item-name{font-size:13px;font-weight:500}
+.plan-item-dias{font-size:11px;color:var(--text2)}
+
+/* REINICIO */
+.reinicio-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.25rem}
+.reinicio-step{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.reinicio-step:last-child{border-bottom:none}
+.step-num-box{width:24px;height:24px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body h4{font-size:12px;font-weight:500;margin-bottom:2px}
+.step-body p{font-size:11px;color:var(--text2);line-height:1.5}
+
+@media(max-width:600px){
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .chart-section{grid-template-columns:1fr}
+  .modal-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">Cargando aplicacion...</div>
+
+<!-- AUTH -->
+<div id="auth-screen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo"><h1>Gimnasio EAFIT</h1><p>Sistema de gestion integral</p></div>
+    <div id="auth-login">
+      <div class="auth-field"><label>Correo electronico</label><input type="email" id="a-email" placeholder="correo@ejemplo.com"></div>
+      <div class="auth-field"><label>Contrasena</label><input type="password" id="a-pass" placeholder="Contrasena"></div>
+      <button class="btn-auth" onclick="loginUser()">Ingresar</button>
+      <div class="auth-msg" id="a-msg"></div>
+      <div class="auth-links">
+        <button class="auth-link" onclick="showReset()">Olvide mi contrasena</button>
+        <button class="auth-link" onclick="showRegister()">Crear cuenta</button>
+      </div>
+    </div>
+    <div id="auth-register" style="display:none">
+      <div class="auth-field"><label>Correo</label><input type="email" id="r-email" placeholder="correo@ejemplo.com"></div>
+      <div class="auth-field"><label>Contrasena (min. 6 caracteres)</label><input type="password" id="r-pass" placeholder="Contrasena"></div>
+      <div class="auth-field"><label>Confirmar contrasena</label><input type="password" id="r-pass2" placeholder="Repita la contrasena"></div>
+      <button class="btn-auth" onclick="registerUser()">Crear cuenta</button>
+      <div class="auth-msg" id="r-msg"></div>
+      <div class="auth-links"><button class="auth-link" onclick="showLogin()">← Volver</button></div>
+    </div>
+    <div id="auth-reset" style="display:none">
+      <div class="auth-field"><label>Correo</label><input type="email" id="reset-email" placeholder="correo@ejemplo.com"></div>
+      <button class="btn-auth" onclick="sendReset()">Enviar enlace</button>
+      <div class="auth-msg" id="reset-msg"></div>
+      <div class="auth-links"><button class="auth-link" onclick="showLogin()">← Volver</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Gimnasio Universidad EAFIT</h1>
+      <p id="topbar-subtitle">Sistema de gestion</p>
+    </div>
+    <div class="topbar-right">
+      <span class="user-email" id="user-email-display" style="font-size:11px;color:var(--text3)"></span>
+      <span class="badge-role" id="role-badge"></span>
+      <button class="btn-notif" onclick="toggleNotif()">Alertas<span class="notif-dot" id="notif-dot"></span></button>
+      <button class="btn-topbar btn-topbar-danger" onclick="openModal('modal-reinicio')" id="btn-reinicio" style="display:none">Reiniciar</button>
+      <button class="btn-topbar" onclick="logoutUser()">Cerrar sesion</button>
+    </div>
+  </div>
+  <div class="module-bar" id="module-bar" style="display:none">
+    <button class="mod-btn active" id="mod-seguimiento" onclick="switchModule('seguimiento')">Seguimiento entrenadores</button>
+    <button class="mod-btn" id="mod-membresias" onclick="switchModule('membresias')">Membresias</button>
+  </div>
+  <div class="main">
+    <div id="notif-panel" style="display:none"></div>
+
+    <!-- ══ MÓDULO SEGUIMIENTO ══ -->
+    <div id="module-seguimiento">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('s-dashboard')">Panel general</button>
+        <button class="tab" onclick="switchTab('s-registro')">Registrar tarea</button>
+        <button class="tab" onclick="switchTab('s-historial')">Historial</button>
+        <button class="tab" onclick="switchTab('s-entrenadores')">Por entrenador</button>
+        <button class="tab" onclick="switchTab('s-reportes')">Reportes</button>
+      </div>
+      <div id="tab-s-dashboard" class="tab-content active">
+        <div class="metrics-grid" id="s-metrics"></div>
+        <div id="s-alert"></div>
+        <div class="section-label">Tareas activas</div>
+        <div class="filter-row">
+          <select id="sf-est" onchange="renderSDashboard()"><option value="">Todos los estados</option><option value="vencido">Vencido</option><option value="pendiente">Proximo</option><option value="al_dia">Al dia</option></select>
+          <select id="sf-tip" onchange="renderSDashboard()"><option value="">Todos los tipos</option><option value="plan">Plan entrena.</option><option value="valoracion">Valoracion</option></select>
+          <select id="sf-coa" onchange="renderSDashboard()"><option value="">Todos los entrenadores</option></select>
+          <input type="text" id="sf-q" placeholder="Buscar cliente o cedula..." style="width:180px" oninput="renderSDashboard()">
+          <button class="btn btn-export" onclick="exportTareas()">Exportar</button>
+        </div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:15%"><col style="width:13%"><col style="width:9%"><col style="width:10%"><col style="width:11%"><col style="width:11%"><col style="width:8%"><col style="width:23%"></colgroup>
+          <thead><tr><th>Entrenador</th><th>Cliente</th><th>Cedula</th><th>Tipo</th><th>Realizacion</th><th>Proxima</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-s-dashboard"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-s-registro" class="tab-content">
+        <div class="form-card">
+          <div class="section-label" style="margin-bottom:.85rem">Registrar tarea realizada</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Entrenador *</label><select id="reg-coach"></select></div>
+            <div class="form-group"><label>Cliente *</label><input type="text" id="reg-cliente" placeholder="Nombre completo"></div>
+            <div class="form-group"><label>Cedula</label><input type="text" id="reg-cedula" placeholder="Numero de identificacion"></div>
+            <div class="form-group"><label>Tipo *</label><select id="reg-tipo"><option value="plan">Plan de entrenamiento</option><option value="valoracion">Valoracion fisica</option></select></div>
+            <div class="form-group"><label>Fecha *</label><input type="date" id="reg-fecha"></div>
+            <div class="form-group"><label>Intervalo (dias)</label><select id="reg-intervalo"><option value="30">30</option><option value="45">45</option><option value="60">60</option><option value="90">90</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="reg-notas" placeholder="Observaciones"></textarea></div>
+          </div>
+          <button class="btn-submit" onclick="registrarTarea()">Registrar tarea</button>
+          <span id="reg-msg" style="font-size:11px;margin-left:10px"></span>
+        </div>
+      </div>
+      <div id="tab-s-historial" class="tab-content">
+        <div class="date-range-row">
+          <label>Desde</label><input type="date" id="h-desde" onchange="renderHistorial()">
+          <label>Hasta</label><input type="date" id="h-hasta" onchange="renderHistorial()">
+          <select id="h-coach" onchange="renderHistorial()"><option value="">Todos los entrenadores</option></select>
+          <select id="h-tipo" onchange="renderHistorial()"><option value="">Todos los tipos</option><option value="plan">Plan</option><option value="valoracion">Valoracion</option></select>
+          <input type="text" id="h-q" placeholder="Buscar..." style="width:130px" oninput="renderHistorial()">
+          <button class="btn btn-export" onclick="exportHistorial()">Exportar</button>
+        </div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:11%"><col style="width:15%"><col style="width:14%"><col style="width:9%"><col style="width:10%"><col style="width:11%"><col style="width:8%"><col style="width:22%"></colgroup>
+          <thead><tr><th>Fecha</th><th>Entrenador</th><th>Cliente</th><th>Cedula</th><th>Tipo</th><th>Proxima</th><th>Estado</th><th>Notas</th></tr></thead>
+          <tbody id="tbody-historial"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-s-entrenadores" class="tab-content"><div id="coach-cards"></div></div>
+      <div id="tab-s-reportes" class="tab-content">
+        <div class="chart-section" id="chart-section"></div>
+        <div class="section-label">Detalle por entrenador</div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:20%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:13%"></colgroup>
+          <thead><tr><th>Entrenador</th><th>Total</th><th>Planes</th><th>Valoraciones</th><th>Al dia</th><th>Vencidas</th><th>Proximas</th><th>Cumplimiento</th></tr></thead>
+          <tbody id="tbody-reporte"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ══ MÓDULO MEMBRESÍAS ══ -->
+    <div id="module-membresias" style="display:none">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('m-dashboard')">Panel</button>
+        <button class="tab" onclick="switchTab('m-registro')">Registrar / Renovar</button>
+        <button class="tab" onclick="switchTab('m-clientes')">Clientes</button>
+        <button class="tab" onclick="switchTab('m-entregables')">Entregables</button>
+        <button class="tab" onclick="switchTab('m-reportes')">Reportes</button>
+        <button class="tab tab-admin-only" onclick="switchTab('m-planes')" style="display:none">Tipos de plan</button>
+      </div>
+      <div id="tab-m-dashboard" class="tab-content active">
+        <div class="metrics-grid" id="m-metrics"></div>
+        <div id="m-alerts"></div>
+        <div class="section-label">Estado de membresias</div>
+        <div class="filter-row">
+          <select id="mf-est" onchange="renderMDashboard()"><option value="">Todos los estados</option><option value="activa">Activa</option><option value="proxima">Por vencer</option><option value="vencida">Vencida</option></select>
+          <select id="mf-plan" onchange="renderMDashboard()"><option value="">Todos los planes</option></select>
+          <select id="mf-tipo" onchange="renderMDashboard()"><option value="">Nuevos y renovaciones</option><option value="nuevo">Solo nuevos</option><option value="renovacion">Solo renovaciones</option></select>
+          <input type="text" id="mf-q" placeholder="Buscar nombre o cedula..." style="width:180px" oninput="renderMDashboard()">
+          <button class="btn btn-export" onclick="exportMemb()">Exportar</button>
+        </div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:11%"><col style="width:18%"><col style="width:14%"><col style="width:11%"><col style="width:11%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:10%"></colgroup>
+          <thead><tr><th>Cedula</th><th>Nombre</th><th>Plan</th><th>Inicio</th><th>Vencimiento</th><th>Dias rest.</th><th>Estado</th><th>Tipo</th><th>Accion</th></tr></thead>
+          <tbody id="tbody-m-dashboard"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-m-registro" class="tab-content">
+        <div class="form-card">
+          <div class="section-label" style="margin-bottom:.85rem">Registrar membresía</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
+            <div class="form-group" style="flex:1;min-width:160px"><label>Buscar por cedula</label><input type="text" id="m-buscar" placeholder="Ingrese cedula" oninput="buscarClienteAuto(this.value)"></div>
+            <button class="btn" style="height:34px" onclick="buscarCliente()">Buscar</button>
+          </div>
+          <div id="m-info-cliente" style="font-size:12px;margin-bottom:.85rem;min-height:16px"></div>
+          <div class="form-grid">
+            <div class="form-group"><label>Cedula *</label><input type="text" id="m-cedula" placeholder="Numero de identificacion" oninput="validarCedulaEnForm(this.value)"></div>
+            <div class="form-group"><label>Nombre completo *</label><input type="text" id="m-nombre" placeholder="Nombre del cliente"></div>
+            <div class="form-group"><label>Tipo de plan *</label><select id="m-plan"><option value="">— Seleccione un plan —</option></select></div>
+            <div class="form-group"><label>Fecha de inicio *</label><input type="date" id="m-inicio"></div>
+            <div class="form-group"><label>Fecha de fin *</label><input type="date" id="m-fin"></div>
+            <div class="form-group"><label>Notas</label><input type="text" id="m-notas" placeholder="Observaciones"></div>
+          </div>
+          <button class="btn-submit" onclick="registrarMemb()">Registrar membresía</button>
+          <span id="m-reg-msg" style="font-size:11px;margin-left:10px"></span>
+        </div>
+      </div>
+      <div id="tab-m-clientes" class="tab-content">
+        <div class="filter-row">
+          <input type="text" id="mc-q" placeholder="Buscar nombre o cedula..." style="width:220px" oninput="renderClientes()">
+        </div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:13%"><col style="width:20%"><col style="width:14%"><col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:11%"></colgroup>
+          <thead><tr><th>Cedula</th><th>Nombre</th><th>Plan actual</th><th>Inicio</th><th>Vencimiento</th><th>Estado</th><th>Visitas</th><th>Accion</th></tr></thead>
+          <tbody id="tbody-clientes"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-m-entregables" class="tab-content">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Clientes con membresía activa y su estado de entregables: plan de entrenamiento y valoración física.</p>
+        <div class="filter-row">
+          <select id="me-f" onchange="renderEntregables()"><option value="">Todos</option><option value="completo">Completo</option><option value="parcial">Parcial</option><option value="pendiente">Pendiente</option></select>
+          <input type="text" id="me-q" placeholder="Buscar..." style="width:180px" oninput="renderEntregables()">
+        </div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:11%"><col style="width:18%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:16%"></colgroup>
+          <thead><tr><th>Cedula</th><th>Nombre</th><th>Plan</th><th>Vencimiento</th><th>Plan entrena.</th><th>Valoracion</th><th>Estado</th><th>Notas de membresía</th></tr></thead>
+          <tbody id="tbody-entregables"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-m-reportes" class="tab-content">
+        <div class="filter-row" style="margin-bottom:1rem">
+          <label style="font-size:12px;color:var(--text2)">Periodo:</label>
+          <input type="date" id="rep-desde">
+          <label style="font-size:12px;color:var(--text2)">al</label>
+          <input type="date" id="rep-hasta">
+          <button class="btn btn-export" onclick="exportReporteCompleto()">Descargar reporte completo (Excel)</button>
+        </div>
+        <div class="metrics-grid" id="rep-metrics" style="margin-bottom:1.25rem"></div>
+        <div class="chart-section" id="rep-charts"></div>
+        <div class="section-label">Vencimientos del mes en curso</div>
+        <div class="table-wrap"><table>
+          <colgroup><col style="width:14%"><col style="width:22%"><col style="width:16%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:14%"></colgroup>
+          <thead><tr><th>Cedula</th><th>Nombre</th><th>Plan</th><th>Vencimiento</th><th>Dias rest.</th><th>Estado</th><th>Tipo</th></tr></thead>
+          <tbody id="tbody-vencimientos"></tbody>
+        </table></div>
+      </div>
+      <div id="tab-m-planes" class="tab-content">
+        <div class="form-card">
+          <div class="section-label" style="margin-bottom:.85rem">Agregar tipo de plan</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="form-group"><label>Nombre del plan *</label><input type="text" id="np-nombre" placeholder="Ej: Plan corporativo"></div>
+            <div class="form-group"><label>Duracion en dias *</label><input type="number" id="np-dias" placeholder="Ej: 30" min="1"></div>
+            <div class="form-group"><label>Descripcion (opcional)</label><input type="text" id="np-desc" placeholder="Descripcion breve"></div>
+          </div>
+          <button class="btn-submit" onclick="agregarPlan()">Agregar plan</button>
+          <span id="np-msg" style="font-size:11px;margin-left:10px"></span>
+        </div>
+        <div class="section-label">Planes configurados</div>
+        <div id="planes-list" class="planes-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TAREA -->
+<div class="modal-overlay" id="modal-edit-tarea">
+  <div class="modal">
+    <h2>Editar tarea</h2>
+    <input type="hidden" id="edit-id">
+    <div class="modal-grid">
+      <div class="form-group"><label>Entrenador</label><select id="edit-coach"></select></div>
+      <div class="form-group"><label>Cliente</label><input type="text" id="edit-cliente"></div>
+      <div class="form-group"><label>Cedula</label><input type="text" id="edit-cedula"></div>
+      <div class="form-group"><label>Tipo</label><select id="edit-tipo"><option value="plan">Plan</option><option value="valoracion">Valoracion</option></select></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="edit-fecha"></div>
+      <div class="form-group"><label>Intervalo</label><select id="edit-intervalo"><option value="30">30</option><option value="45">45</option><option value="60">60</option><option value="90">90</option></select></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Notas</label><textarea id="edit-notas"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-edit-tarea')">Cancelar</button>
+      <button class="btn-submit" onclick="guardarTarea()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RENOVAR -->
+<div class="modal-overlay" id="modal-renovar">
+  <div class="modal">
+    <h2>Renovar membresía</h2>
+    <input type="hidden" id="renov-cedula">
+    <div id="renov-info" style="font-size:12px;color:var(--text2);margin-bottom:1rem"></div>
+    <div class="modal-grid">
+      <div class="form-group"><label>Plan *</label><select id="renov-plan"><option value="">— Seleccione —</option></select></div>
+      <div class="form-group"><label>Fecha de inicio *</label><input type="date" id="renov-inicio"></div>
+      <div class="form-group"><label>Fecha de fin *</label><input type="date" id="renov-fin"></div>
+      <div class="form-group"><label>Notas</label><input type="text" id="renov-notas"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-renovar')">Cancelar</button>
+      <button class="btn-submit" onclick="confirmarRenovacion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REINICIO -->
+<div class="modal-overlay" id="modal-reinicio">
+  <div class="modal">
+    <h2>Reiniciar aplicacion</h2>
+    <div class="modal-danger">Atencion: esta accion es irreversible. Antes de borrar cualquier dato, descargue el reporte completo con la copia de seguridad.</div>
+    <div class="reinicio-section" style="margin-bottom:1rem">
+      <div class="reinicio-step">
+        <div class="step-num-box">1</div>
+        <div class="step-body"><h4>Descargar copia de seguridad</h4><p>Descarga un Excel con todos los datos: tareas, membresias, planes y clientes. Guardelo antes de continuar.</p></div>
+        <button class="btn btn-export" style="margin-left:auto;flex-shrink:0" onclick="exportBackupCompleto()">Descargar copia</button>
+      </div>
+      <div class="reinicio-step">
+        <div class="step-num-box">2</div>
+        <div class="step-body"><h4>Seleccionar que borrar</h4><p>Elija que modulo desea reiniciar. Los tipos de plan no se borran.</p></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+      <label style="font-size:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="del-tareas"> Borrar todas las tareas de seguimiento</label>
+      <label style="font-size:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="del-memb"> Borrar todas las membresias y clientes</label>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Escriba CONFIRMAR para habilitar el borrado:</label>
+      <input type="text" id="reinicio-confirm" placeholder="CONFIRMAR" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;outline:none">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-reinicio')">Cancelar</button>
+      <button class="btn-sm btn-del" style="padding:7px 16px;font-size:12px" onclick="ejecutarReinicio()">Borrar datos seleccionados</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+const FB = {
+  apiKey:"AIzaSyBiysrxV_QgIUlvXXmfko9L5eltUk1Smi8",
+  authDomain:"seguimiento-a-planes.firebaseapp.com",
+  projectId:"seguimiento-a-planes",
+  storageBucket:"seguimiento-a-planes.firebasestorage.app",
+  messagingSenderId:"647151420641",
+  appId:"1:647151420641:web:091712775f7df79ce7a3a0"
+};
+const ADMIN_EMAIL  = "aperezb1@eafit.edu.co";
+const RECEP_EMAILS = ["vivo@eafit.edu.co"];
+
+const COACHES = [
+  {id:"1",name:"Alejandro Tascon",ini:"AT",bg:"#E6F1FB",tx:"#185FA5"},
+  {id:"2",name:"Alejandro Ruiz",  ini:"AR",bg:"#EAF3DE",tx:"#3B6D11"},
+  {id:"3",name:"John Gutierrez",  ini:"JG",bg:"#EEEDFE",tx:"#534AB7"},
+  {id:"4",name:"Diego Correa",    ini:"DC",bg:"#FAECE7",tx:"#993C1D"},
+  {id:"5",name:"Ferney Munoz",    ini:"FM",bg:"#FAEEDA",tx:"#854F0B"},
+  {id:"6",name:"Mateo Salazar",   ini:"MS",bg:"#E1F5EE",tx:"#0F6E56"},
+  {id:"7",name:"Otro",            ini:"OT",bg:"#F1EFE8",tx:"#5F5E5A"},
+  {id:"8",name:"Gimnasio Vivo",   ini:"GV",bg:"#FBEAF0",tx:"#993556"}
+];
+
+const app  = initializeApp(FB);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let tasks=[], membresias=[], planes=[];
+let currentUser=null, userRole=null, currentModule='seguimiento';
+let unsubs=[];
+
+// ── UTILS ──
+const gc = id => COACHES.find(c=>c.id===String(id))||{name:"—",ini:"?",bg:"#eee",tx:"#333"};
+const addD = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+parseInt(n)); return r; };
+const fmt = d => d ? new Date(d).toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+const fmtISO = d => new Date(d).toISOString().split("T")[0];
+const todayISO = () => new Date().toISOString().split("T")[0];
+const getToday = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const diffDays = s => { const d=new Date(s); d.setHours(0,0,0,0); return Math.round((d-getToday())/864e5); };
+const nextDateT = t => addD(t.fecha, t.intervalo);
+const taskSt = t => { const n=nextDateT(t); n.setHours(0,0,0,0); const d=Math.round((n-getToday())/864e5); return d<0?"vencido":d<=7?"pendiente":"al_dia"; };
+const membSt = m => { const d=diffDays(m.fin); return d<0?"vencida":d<=7?"proxima":"activa"; };
+const stBadge = s => s==="al_dia"?'<span class="badge b-ok">Al dia</span>':s==="pendiente"?'<span class="badge b-warn">Proximo</span>':'<span class="badge b-danger">Vencido</span>';
+const mBadge  = s => s==="activa"?'<span class="badge b-ok">Activa</span>':s==="proxima"?'<span class="badge b-warn">Por vencer</span>':'<span class="badge b-danger">Vencida</span>';
+const tipoBadge = t => t==="plan"?'<span class="badge b-plan">Plan</span>':'<span class="badge b-val">Valoracion</span>';
+const clienteTipo = c => membresias.filter(x=>x.cedula===c).length<=1?"nuevo":"renovacion";
+const ctBadge = t => t==="nuevo"?'<span class="badge b-new">Nuevo</span>':'<span class="badge b-renew">Renovacion</span>';
+const avHTML = c => `<div class="avatar" style="background:${c.bg};color:${c.tx}">${c.ini}</div>`;
+const getPlanLabel = id => { const p=planes.find(x=>x.id===id||x.nombre===id); return p?p.nombre:id; };
+const getPlanDias  = id => { const p=planes.find(x=>x.id===id||x.nombre===id); return p?parseInt(p.dias):30; };
+const getLastMemb  = c => membresias.filter(m=>m.cedula===c).sort((a,b)=>b.fin.localeCompare(a.fin))[0];
+
+// ── AUTH ──
+window.showLogin=()=>{ ["auth-login","auth-register","auth-reset"].forEach((id,i)=>document.getElementById(id).style.display=i===0?"block":"none"); };
+window.showRegister=()=>{ ["auth-login","auth-register","auth-reset"].forEach((id,i)=>document.getElementById(id).style.display=i===1?"block":"none"); };
+window.showReset=()=>{ ["auth-login","auth-register","auth-reset"].forEach((id,i)=>document.getElementById(id).style.display=i===2?"block":"none"); };
+
+window.loginUser=async()=>{
+  const email=document.getElementById("a-email").value.trim(), pass=document.getElementById("a-pass").value;
+  const msg=document.getElementById("a-msg"); msg.textContent=""; msg.className="auth-msg";
+  if(!email||!pass){msg.textContent="Complete todos los campos.";msg.className="auth-msg err";return;}
+  try{ await signInWithEmailAndPassword(auth,email,pass); }
+  catch(e){ const m={"auth/invalid-credential":"Correo o contrasena incorrectos.","auth/user-not-found":"Correo no registrado."}; msg.textContent=m[e.code]||"Error al ingresar."; msg.className="auth-msg err"; }
+};
+window.registerUser=async()=>{
+  const email=document.getElementById("r-email").value.trim(), pass=document.getElementById("r-pass").value, pass2=document.getElementById("r-pass2").value;
+  const msg=document.getElementById("r-msg"); msg.textContent=""; msg.className="auth-msg";
+  if(!email||!pass){msg.textContent="Complete todos los campos.";msg.className="auth-msg err";return;}
+  if(pass!==pass2){msg.textContent="Las contrasenas no coinciden.";msg.className="auth-msg err";return;}
+  if(pass.length<6){msg.textContent="Minimo 6 caracteres.";msg.className="auth-msg err";return;}
+  try{ await createUserWithEmailAndPassword(auth,email,pass); }
+  catch(e){ const m={"auth/email-already-in-use":"Correo ya registrado."}; msg.textContent=m[e.code]||"Error."; msg.className="auth-msg err"; }
+};
+window.sendReset=async()=>{
+  const email=document.getElementById("reset-email").value.trim(), msg=document.getElementById("reset-msg");
+  try{ await sendPasswordResetEmail(auth,email); msg.textContent="Enlace enviado."; msg.className="auth-msg ok"; }
+  catch(e){ msg.textContent="Error al enviar."; msg.className="auth-msg err"; }
+};
+window.logoutUser=()=>signOut(auth);
+
+onAuthStateChanged(auth, user=>{
+  document.getElementById("loading").style.display="none";
+  if(user){
+    currentUser=user;
+    userRole=user.email===ADMIN_EMAIL?'admin':RECEP_EMAILS.includes(user.email)?'recepcion':'entrenador';
+    document.getElementById("auth-screen").style.display="none";
+    document.getElementById("app-screen").style.display="flex";
+    document.getElementById("user-email-display").textContent=user.email;
+    const rl={admin:"Administrador",recepcion:"Recepcion",entrenador:"Entrenador"};
+    const rc={admin:"badge-admin",recepcion:"badge-recep",entrenador:"badge-trainer"};
+    document.getElementById("role-badge").textContent=rl[userRole];
+    document.getElementById("role-badge").className="badge-role "+rc[userRole];
+    if(userRole==='admin') document.getElementById("btn-reinicio").style.display="";
+    setupUI(); subscribeData();
+  } else {
+    currentUser=null; userRole=null;
+    unsubs.forEach(u=>u()); unsubs=[];
+    tasks=[]; membresias=[]; planes=[];
+    document.getElementById("app-screen").style.display="none";
+    document.getElementById("auth-screen").style.display="flex";
+    showLogin();
+  }
+});
+
+function setupUI(){
+  const modBar=document.getElementById("module-bar");
+  if(userRole==='admin'){
+    modBar.style.display="flex";
+    document.querySelectorAll(".tab-admin-only").forEach(el=>el.style.display="");
+    showModule('seguimiento');
+  } else if(userRole==='recepcion'){
+    modBar.style.display="none";
+    document.getElementById("module-seguimiento").style.display="none";
+    document.getElementById("module-membresias").style.display="block";
+    document.getElementById("topbar-subtitle").textContent="Modulo de membresias";
+  } else {
+    modBar.style.display="none";
+    document.getElementById("module-seguimiento").style.display="block";
+    document.getElementById("module-membresias").style.display="none";
+    document.getElementById("topbar-subtitle").textContent="Seguimiento de entrenadores";
+  }
+  initSelects();
+}
+
+function showModule(mod){
+  currentModule=mod;
+  document.getElementById("mod-seguimiento").classList.toggle("active",mod==="seguimiento");
+  document.getElementById("mod-membresias").classList.toggle("active",mod==="membresias");
+  document.getElementById("module-seguimiento").style.display=mod==="seguimiento"?"block":"none";
+  document.getElementById("module-membresias").style.display=mod==="membresias"?"block":"none";
+}
+window.switchModule=mod=>{ showModule(mod); if(mod==="membresias")renderMDashboard(); else renderSDashboard(); };
+
+function subscribeData(){
+  const q1=query(collection(db,"tasks"),orderBy("createdAt","desc"));
+  unsubs.push(onSnapshot(q1,snap=>{ tasks=snap.docs.map(d=>({id:d.id,...d.data()})); if(userRole!=='recepcion')renderSDashboard(); updateNotif(); }));
+  if(userRole==='admin'||userRole==='recepcion'){
+    const q2=query(collection(db,"membresias"),orderBy("createdAt","desc"));
+    unsubs.push(onSnapshot(q2,snap=>{ membresias=snap.docs.map(d=>({id:d.id,...d.data()})); if(currentModule==='membresias'||userRole==='recepcion')renderMDashboard(); updateNotif(); fillPlanSelects(); }));
+    const q3=query(collection(db,"planes"),orderBy("nombre","asc"));
+    unsubs.push(onSnapshot(q3,snap=>{ planes=snap.docs.map(d=>({id:d.id,...d.data()})); fillPlanSelects(); renderPlanesAdmin(); }));
+  }
+}
+
+// ── TABS ──
+window.switchTab=tab=>{
+  const mod = tab.startsWith("m-") ? "membresias" : "seguimiento";
+  const container=document.getElementById("module-"+mod);
+  const prefix = "tab-";
+  container.querySelectorAll(".tab").forEach((t,i)=>{
+    const names = mod==="membresias"
+      ? ["m-dashboard","m-registro","m-clientes","m-entregables","m-reportes","m-planes"]
+      : ["s-dashboard","s-registro","s-historial","s-entrenadores","s-reportes"];
+    t.classList.toggle("active", names[i]===tab);
+  });
+  container.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+  const el=document.getElementById(prefix+tab); if(el) el.classList.add("active");
+  if(tab==="s-historial") renderHistorial();
+  if(tab==="s-entrenadores") renderCoaches();
+  if(tab==="s-reportes") renderSReportes();
+  if(tab==="m-dashboard") renderMDashboard();
+  if(tab==="m-clientes") renderClientes();
+  if(tab==="m-entregables") renderEntregables();
+  if(tab==="m-reportes") renderMReportes();
+  if(tab==="m-planes") renderPlanesAdmin();
+};
+window.openModal = id=>document.getElementById(id).classList.add("open");
+window.closeModal= id=>document.getElementById(id).classList.remove("open");
+
+// ── NOTIF ──
+function updateNotif(){
+  const vT=tasks.filter(t=>taskSt(t)==="vencido"), pT=tasks.filter(t=>taskSt(t)==="pendiente");
+  const vM=(userRole!=='entrenador')?membresias.filter(m=>membSt(m)==="vencida"):[];
+  const pM=(userRole!=='entrenador')?membresias.filter(m=>membSt(m)==="proxima"):[];
+  document.getElementById("notif-dot").style.display=(vT.length||pT.length||vM.length||pM.length)?"block":"none";
+  const panel=document.getElementById("notif-panel");
+  if(panel.style.display==="none") return;
+  let html="";
+  if(!vT.length&&!pT.length&&!vM.length&&!pM.length) html='<p style="font-size:12px;color:var(--text2)">Sin alertas pendientes.</p>';
+  vT.forEach(t=>{ html+=`<div class="notif-item"><span><b>${t.cliente}</b> — ${gc(t.coachId).name} · ${tipoBadge(t.tipo)}</span><span class="badge b-danger">Tarea vencida</span></div>`; });
+  pT.forEach(t=>{ const d=Math.round((nextDateT(t)-getToday())/864e5); html+=`<div class="notif-item"><span><b>${t.cliente}</b> — ${gc(t.coachId).name} · ${tipoBadge(t.tipo)}</span><span class="badge b-warn">En ${d} dia(s)</span></div>`; });
+  vM.forEach(m=>{ html+=`<div class="notif-item"><span><b>${m.nombre}</b> · ${getPlanLabel(m.plan)}</span><span class="badge b-danger">Membresia vencida</span></div>`; });
+  pM.forEach(m=>{ const d=diffDays(m.fin); html+=`<div class="notif-item"><span><b>${m.nombre}</b> · ${getPlanLabel(m.plan)}</span><span class="badge b-warn">Vence en ${d} dia(s)</span></div>`; });
+  panel.innerHTML=`<div class="notif-panel"><div class="section-label" style="margin-bottom:8px">Alertas activas</div>${html}</div>`;
+}
+window.toggleNotif=()=>{ const p=document.getElementById("notif-panel"); p.style.display=p.style.display==="none"?"block":"none"; if(p.style.display==="block")updateNotif(); };
+
+// ══ SEGUIMIENTO ══
+window.renderSDashboard=()=>{
+  const m=()=>{ const t=tasks.length,v=tasks.filter(x=>taskSt(x)==="vencido").length,p=tasks.filter(x=>taskSt(x)==="pendiente").length,ok=tasks.filter(x=>taskSt(x)==="al_dia").length,pl=tasks.filter(x=>x.tipo==="plan").length,va=tasks.filter(x=>x.tipo==="valoracion").length,pct=t>0?Math.round(ok/t*100):0; return{t,v,p,ok,pl,va,pct}; };
+  const {t,v,p,pl,va,pct}=m();
+  document.getElementById("s-metrics").innerHTML=`
+    <div class="metric-card"><div class="metric-label">Tareas registradas</div><div class="metric-value">${t}</div><div class="metric-sub">${pl} planes · ${va} valoraciones</div></div>
+    <div class="metric-card"><div class="metric-label">Cumplimiento</div><div class="metric-value ${pct>=80?"mv-ok":pct>=50?"mv-warn":"mv-danger"}">${pct}%</div><div class="metric-sub">Tareas al dia / total</div></div>
+    <div class="metric-card"><div class="metric-label">Vencidas</div><div class="metric-value ${v===0?"mv-ok":v<=2?"mv-warn":"mv-danger"}">${v}</div><div class="metric-sub">Sin renovar</div></div>
+    <div class="metric-card"><div class="metric-label">Proximas (<=7 dias)</div><div class="metric-value ${p===0?"mv-ok":"mv-warn"}">${p}</div><div class="metric-sub">Esta semana</div></div>`;
+  const fE=document.getElementById("sf-est").value, fT=document.getElementById("sf-tip").value, fC=document.getElementById("sf-coa").value, fQ=(document.getElementById("sf-q").value||"").toLowerCase();
+  let data=[...tasks];
+  if(fE) data=data.filter(x=>taskSt(x)===fE);
+  if(fT) data=data.filter(x=>x.tipo===fT);
+  if(fC) data=data.filter(x=>String(x.coachId)===fC);
+  if(fQ) data=data.filter(x=>x.cliente.toLowerCase().includes(fQ)||(x.cedula||"").includes(fQ));
+  data.sort((a,b)=>({vencido:0,pendiente:1,al_dia:2}[taskSt(a)]-{vencido:0,pendiente:1,al_dia:2}[taskSt(b)]));
+  const ce=userRole==='admin';
+  const tb=document.getElementById("tbody-s-dashboard");
+  if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Sin tareas.</td></tr>';return;}
+  tb.innerHTML=data.map(t=>`<tr><td><div class="coach-row">${avHTML(gc(t.coachId))}<span>${gc(t.coachId).name}</span></div></td>
+    <td>${t.cliente}</td><td>${t.cedula||"—"}</td><td>${tipoBadge(t.tipo)}</td>
+    <td>${fmt(t.fecha)}</td><td>${fmt(nextDateT(t))}</td><td>${stBadge(taskSt(t))}</td>
+    <td><div class="actions-cell"><button class="btn-sm btn-ok" onclick="marcarHoy('${t.id}')">Realizada</button>${ce?`<button class="btn-sm btn-edit" onclick="editarTarea('${t.id}')">Editar</button><button class="btn-sm btn-del" onclick="borrarTarea('${t.id}')">Eliminar</button>`:""}</div></td></tr>`).join("");
+  const venc=tasks.filter(x=>taskSt(x)==="vencido");
+  document.getElementById("s-alert").innerHTML=venc.length?`<div class="alert-box">Vencidas (${venc.length}): ${venc.map(x=>`${x.cliente} (${gc(x.coachId).name.split(" ")[0]})`).join(", ")}</div>`:"";
+};
+
+window.marcarHoy=async id=>{ try{ await updateDoc(doc(db,"tasks",id),{fecha:todayISO()}); }catch(e){alert("Error.");} };
+window.borrarTarea=async id=>{ if(!confirm("Eliminar esta tarea?"))return; try{ await deleteDoc(doc(db,"tasks",id)); }catch(e){alert("Error.");} };
+window.editarTarea=id=>{
+  const t=tasks.find(x=>x.id===id); if(!t)return;
+  ["edit-id","edit-cliente","edit-cedula","edit-fecha","edit-notas"].forEach(k=>document.getElementById(k).value=t[k.replace("edit-","")]||"");
+  document.getElementById("edit-id").value=id;
+  document.getElementById("edit-coach").value=t.coachId;
+  document.getElementById("edit-tipo").value=t.tipo;
+  document.getElementById("edit-fecha").value=t.fecha;
+  document.getElementById("edit-intervalo").value=t.intervalo;
+  document.getElementById("edit-notas").value=t.notas||"";
+  openModal("modal-edit-tarea");
+};
+window.guardarTarea=async()=>{
+  const id=document.getElementById("edit-id").value;
+  try{
+    await updateDoc(doc(db,"tasks",id),{coachId:document.getElementById("edit-coach").value,cliente:document.getElementById("edit-cliente").value.trim(),cedula:document.getElementById("edit-cedula").value.trim(),tipo:document.getElementById("edit-tipo").value,fecha:document.getElementById("edit-fecha").value,intervalo:parseInt(document.getElementById("edit-intervalo").value),notas:document.getElementById("edit-notas").value.trim()});
+    closeModal("modal-edit-tarea");
+  }catch(e){alert("Error.");}
+};
+window.registrarTarea=async()=>{
+  const coach=document.getElementById("reg-coach").value, cliente=document.getElementById("reg-cliente").value.trim(), cedula=document.getElementById("reg-cedula").value.trim(), tipo=document.getElementById("reg-tipo").value, fecha=document.getElementById("reg-fecha").value, intervalo=parseInt(document.getElementById("reg-intervalo").value), notas=document.getElementById("reg-notas").value.trim(), msg=document.getElementById("reg-msg");
+  if(!cliente||!fecha){msg.textContent="Complete cliente y fecha.";msg.style.color="var(--danger)";return;}
+  try{ await addDoc(collection(db,"tasks"),{coachId:coach,cliente,cedula,tipo,fecha,intervalo,notas,createdBy:currentUser.email,createdAt:serverTimestamp()}); msg.textContent="Tarea registrada.";msg.style.color="var(--ok)"; ["reg-cliente","reg-cedula","reg-notas"].forEach(id=>document.getElementById(id).value=""); document.getElementById("reg-fecha").value=todayISO(); setTimeout(()=>msg.textContent="",3000); }
+  catch(e){msg.textContent="Error.";msg.style.color="var(--danger)";}
+};
+window.renderHistorial=()=>{
+  const desde=document.getElementById("h-desde").value, hasta=document.getElementById("h-hasta").value, hC=document.getElementById("h-coach").value, hT=document.getElementById("h-tipo").value, hQ=(document.getElementById("h-q").value||"").toLowerCase();
+  let data=[...tasks];
+  if(desde)data=data.filter(t=>t.fecha>=desde); if(hasta)data=data.filter(t=>t.fecha<=hasta);
+  if(hC)data=data.filter(t=>String(t.coachId)===hC); if(hT)data=data.filter(t=>t.tipo===hT);
+  if(hQ)data=data.filter(t=>t.cliente.toLowerCase().includes(hQ)||(t.cedula||"").includes(hQ));
+  data.sort((a,b)=>b.fecha.localeCompare(a.fecha)); window._hFilt=data;
+  const tb=document.getElementById("tbody-historial");
+  tb.innerHTML=data.length?data.map(t=>`<tr><td>${fmt(t.fecha)}</td><td><div class="coach-row">${avHTML(gc(t.coachId))}<span>${gc(t.coachId).name}</span></div></td><td>${t.cliente}</td><td>${t.cedula||"—"}</td><td>${tipoBadge(t.tipo)}</td><td>${fmt(nextDateT(t))}</td><td>${stBadge(taskSt(t))}</td><td style="white-space:normal;overflow:visible;font-size:11px;color:var(--text2)">${t.notas||"—"}</td></tr>`).join(""):'<tr><td colspan="8" class="empty-state">Sin resultados.</td></tr>';
+};
+window.renderCoaches=()=>{
+  document.getElementById("coach-cards").innerHTML=COACHES.map(c=>{
+    const mt=tasks.filter(t=>String(t.coachId)===c.id), ok=mt.filter(t=>taskSt(t)==="al_dia").length, venc=mt.filter(t=>taskSt(t)==="vencido").length, prox=mt.filter(t=>taskSt(t)==="pendiente").length, pct=mt.length?Math.round(ok/mt.length*100):0;
+    return`<div class="table-wrap" style="margin-bottom:10px"><div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;background:var(--surface2)"><div class="coach-row">${avHTML(c)}<span style="font-weight:600;font-size:13px">${c.name}</span></div><div style="display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span>${mt.length} tareas · ${mt.filter(t=>t.tipo==="plan").length} planes · ${mt.filter(t=>t.tipo==="valoracion").length} valoraciones</span><span style="color:var(--ok);font-weight:500">${pct}% cumplimiento</span>${venc>0?`<span style="color:var(--danger)">${venc} vencida(s)</span>`:""}${prox>0?`<span style="color:var(--warn)">${prox} proxima(s)</span>`:""}</div></div>${mt.length===0?`<div class="empty-state">Sin tareas.</div>`:`<table><colgroup><col style="width:22%"><col style="width:12%"><col style="width:13%"><col style="width:12%"><col style="width:14%"><col style="width:13%"><col style="width:14%"></colgroup><thead><tr><th>Cliente</th><th>Cedula</th><th>Tipo</th><th>Realizacion</th><th>Proxima</th><th>Estado</th><th>Dias rest.</th></tr></thead><tbody>${mt.map(t=>{ const n=nextDateT(t);n.setHours(0,0,0,0);const d=Math.round((n-getToday())/864e5);return`<tr><td>${t.cliente}</td><td>${t.cedula||"—"}</td><td>${tipoBadge(t.tipo)}</td><td>${fmt(t.fecha)}</td><td>${fmt(n)}</td><td>${stBadge(taskSt(t))}</td><td>${d<0?`<span style="color:var(--danger)">${d}d</span>`:`${d}d`}</td></tr>`; }).join("")}</tbody></table>`}</div>`;
+  }).join("");
+};
+window.renderSReportes=()=>{
+  const cd=COACHES.map(c=>{ const mt=tasks.filter(t=>String(t.coachId)===c.id),ok=mt.filter(t=>taskSt(t)==="al_dia").length,venc=mt.filter(t=>taskSt(t)==="vencido").length,prox=mt.filter(t=>taskSt(t)==="pendiente").length,pct=mt.length?Math.round(ok/mt.length*100):0; return{c,mt,ok,venc,prox,pct,pl:mt.filter(t=>t.tipo==="plan").length,va:mt.filter(t=>t.tipo==="valoracion").length}; });
+  const mx=Math.max(...cd.map(d=>d.mt.length),1), tot=tasks.length, tOk=tasks.filter(t=>taskSt(t)==="al_dia").length, tV=tasks.filter(t=>taskSt(t)==="vencido").length, tP=tasks.filter(t=>taskSt(t)==="pendiente").length, pl=tasks.filter(t=>t.tipo==="plan").length, va=tasks.filter(t=>t.tipo==="valoracion").length, pOk=tot?Math.round(tOk/tot*100):0, pV=tot?Math.round(tV/tot*100):0, pP=tot?Math.round(tP/tot*100):0, ci=2*Math.PI*40;
+  const arc=(p,color,off)=>{ const da=ci*p/100,ga=ci-da; return`<circle cx="60" cy="60" r="40" fill="none" stroke="${color}" stroke-width="14" stroke-dasharray="${da.toFixed(1)} ${ga.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)"/>`; };
+  document.getElementById("chart-section").innerHTML=`
+    <div class="chart-card"><div class="chart-title">Tareas por entrenador</div>${cd.map(d=>`<div class="bar-row"><div class="bar-label">${d.c.name.split(" ").slice(0,2).join(" ")}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.mt.length/mx*100)}%;background:${d.c.bg==="#F1EFE8"?"#888780":d.c.tx}"></div></div><div class="bar-val">${d.mt.length}</div></div>`).join("")}</div>
+    <div class="chart-card"><div class="chart-title">Cumplimiento</div>${cd.map(d=>`<div class="bar-row"><div class="bar-label">${d.c.name.split(" ").slice(0,2).join(" ")}</div><div class="bar-track"><div class="bar-fill" style="width:${d.pct}%;background:${d.pct>=80?"#1D9E75":d.pct>=50?"#EF9F27":"#E24B4A"}"></div></div><div class="bar-val" style="color:${d.pct>=80?"var(--ok)":d.pct>=50?"var(--warn)":"var(--danger)"}">${d.pct}%</div></div>`).join("")}</div>
+    <div class="chart-card"><div class="chart-title">Estados</div><div class="donut-wrap"><svg width="120" height="120" viewBox="0 0 120 120">${arc(pOk,"#1D9E75",0)}${arc(pV,"#E24B4A",-(ci*pOk/100))}${arc(pP,"#EF9F27",-(ci*(pOk+pV)/100))}<text x="60" y="56" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text)">${pOk}%</text><text x="60" y="70" text-anchor="middle" font-size="9" fill="var(--text2)">al dia</text></svg><div class="donut-legend"><div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div><span>Al dia: ${tOk} (${pOk}%)</span></div><div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div><span>Proximas: ${tP} (${pP}%)</span></div><div class="legend-item"><div class="legend-dot" style="background:#E24B4A"></div><span>Vencidas: ${tV} (${pV}%)</span></div></div></div></div>
+    <div class="chart-card"><div class="chart-title">Resumen</div><div class="stat-grid"><div class="stat-item"><div class="stat-n">${tot}</div><div class="stat-l">Total</div></div><div class="stat-item"><div class="stat-n" style="color:var(--ok)">${pOk}%</div><div class="stat-l">Cumplimiento</div></div><div class="stat-item"><div class="stat-n" style="color:var(--accent)">${pl}</div><div class="stat-l">Planes</div></div><div class="stat-item"><div class="stat-n" style="color:var(--purple)">${va}</div><div class="stat-l">Valoraciones</div></div></div></div>`;
+  document.getElementById("tbody-reporte").innerHTML=cd.map(d=>`<tr><td><div class="coach-row">${avHTML(d.c)}<span>${d.c.name}</span></div></td><td style="text-align:center">${d.mt.length}</td><td style="text-align:center">${d.pl}</td><td style="text-align:center">${d.va}</td><td style="text-align:center;color:var(--ok)">${d.ok}</td><td style="text-align:center;color:${d.venc>0?"var(--danger)":"var(--text2)"}">${d.venc}</td><td style="text-align:center;color:${d.prox>0?"var(--warn)":"var(--text2)"}">${d.prox}</td><td style="text-align:center;font-weight:600;color:${d.pct>=80?"var(--ok)":d.pct>=50?"var(--warn)":"var(--danger)"}">${d.pct}%</td></tr>`).join("");
+};
+
+// ══ MEMBRESÍAS ══
+window.renderMDashboard=()=>{
+  const hoy=todayISO(), venc=membresias.filter(m=>membSt(m)==="vencida").length, prox=membresias.filter(m=>membSt(m)==="proxima").length, act=membresias.filter(m=>membSt(m)==="activa").length;
+  const cc={}; membresias.forEach(m=>cc[m.cedula]=(cc[m.cedula]||0)+1);
+  const nHoy=membresias.filter(m=>m.inicio===hoy&&cc[m.cedula]===1).length, rHoy=membresias.filter(m=>m.inicio===hoy&&cc[m.cedula]>1).length;
+  document.getElementById("m-metrics").innerHTML=`
+    <div class="metric-card"><div class="metric-label">Membresias activas</div><div class="metric-value mv-ok">${act}</div><div class="metric-sub">De ${membresias.length} registros</div></div>
+    <div class="metric-card"><div class="metric-label">Por vencer (<=7 dias)</div><div class="metric-value ${prox===0?"mv-ok":"mv-warn"}">${prox}</div><div class="metric-sub">Requieren renovacion</div></div>
+    <div class="metric-card"><div class="metric-label">Vencidas sin renovar</div><div class="metric-value ${venc===0?"mv-ok":"mv-danger"}">${venc}</div><div class="metric-sub">Atencion requerida</div></div>
+    <div class="metric-card"><div class="metric-label">Ingresos hoy</div><div class="metric-value">${nHoy+rHoy}</div><div class="metric-sub">${nHoy} nuevos · ${rHoy} renovaciones</div></div>`;
+  let alerts="";
+  const vHoy=membresias.filter(m=>m.fin===hoy), vMañana=membresias.filter(m=>diffDays(m.fin)===1), yaVenc=membresias.filter(m=>membSt(m)==="vencida"&&m.fin!==hoy);
+  if(vHoy.length) alerts+=`<div class="alert-box">Vencen HOY (${vHoy.length}): ${vHoy.map(m=>m.nombre).join(", ")}</div>`;
+  if(vMañana.length) alerts+=`<div class="alert-box">Vencen manana (${vMañana.length}): ${vMañana.map(m=>m.nombre).join(", ")}</div>`;
+  if(yaVenc.length) alerts+=`<div class="alert-danger">Vencidas sin renovar (${yaVenc.length}): ${yaVenc.map(m=>m.nombre).join(", ")}</div>`;
+  document.getElementById("m-alerts").innerHTML=alerts;
+  const fE=document.getElementById("mf-est").value, fP=document.getElementById("mf-plan").value, fT=document.getElementById("mf-tipo").value, fQ=(document.getElementById("mf-q").value||"").toLowerCase();
+  const seen=new Set(); let data=membresias.filter(m=>{ if(seen.has(m.cedula))return false; seen.add(m.cedula);return true; });
+  if(fE)data=data.filter(m=>membSt(m)===fE); if(fP)data=data.filter(m=>m.plan===fP);
+  if(fT)data=data.filter(m=>(cc[m.cedula]===1?"nuevo":"renovacion")===fT);
+  if(fQ)data=data.filter(m=>m.nombre.toLowerCase().includes(fQ)||m.cedula.includes(fQ));
+  data.sort((a,b)=>({vencida:0,proxima:1,activa:2}[membSt(a)]-{vencida:0,proxima:1,activa:2}[membSt(b)]));
+  window._mFilt=data;
+  const tb=document.getElementById("tbody-m-dashboard");
+  if(!data.length){tb.innerHTML='<tr><td colspan="9" class="empty-state">Sin membresias.</td></tr>';return;}
+  tb.innerHTML=data.map(m=>{ const st=membSt(m),d=diffDays(m.fin),dTxt=d<0?`<span style="color:var(--danger)">${d}d</span>`:d===0?`<span style="color:var(--danger)">Hoy</span>`:`${d}d`,tp=cc[m.cedula]===1?"nuevo":"renovacion"; return`<tr><td>${m.cedula}</td><td>${m.nombre}</td><td>${getPlanLabel(m.plan)}</td><td>${fmt(m.inicio)}</td><td>${fmt(m.fin)}</td><td>${dTxt}</td><td>${mBadge(st)}</td><td>${ctBadge(tp)}</td><td><button class="btn-sm btn-renew" onclick="abrirRenovar('${m.cedula}')">Renovar</button></td></tr>`; }).join("");
+};
+
+function mostrarInfoCliente(cedula){
+  const info=document.getElementById("m-info-cliente");
+  if(!cedula){info.innerHTML="";return;}
+  const m=getLastMemb(cedula);
+  if(m){
+    const st=membSt(m);
+    const stColor=st==="activa"?"var(--danger)":st==="proxima"?"var(--warn)":"var(--text2)";
+    const stTxt=st==="activa"?"ACTIVA":st==="proxima"?"POR VENCER":"vencida";
+    const alerta=st==="activa"||st==="proxima"
+      ?`<div style="background:var(--warn-bg);border:1px solid #EF9F27;border-radius:var(--radius);padding:6px 10px;margin-top:6px;font-size:11px;color:#633806">Este cliente ya tiene una membresia <b>${stTxt}</b> hasta el ${fmt(m.fin)}. Si registra se guardara como renovacion.</div>`
+      :"";
+    document.getElementById("m-cedula").value=m.cedula;
+    document.getElementById("m-nombre").value=m.nombre;
+    document.getElementById("m-plan").value="";
+    document.getElementById("m-inicio").value=todayISO();
+    document.getElementById("m-fin").value="";
+    info.innerHTML=`<span style="color:var(--ok)">Cliente encontrado: <b>${m.nombre}</b> — ultima membresia: ${getPlanLabel(m.plan)} · <span style="color:${stColor};font-weight:500">${stTxt}</span> (${fmt(m.fin)})</span>${alerta}`;
+  } else {
+    document.getElementById("m-cedula").value=cedula;
+    document.getElementById("m-nombre").value="";
+    document.getElementById("m-plan").value="";
+    document.getElementById("m-inicio").value=todayISO();
+    document.getElementById("m-fin").value="";
+    info.innerHTML='<span style="color:var(--ok)">Cliente nuevo — complete el nombre y seleccione el plan.</span>';
+  }
+}
+window.buscarCliente=()=>{
+  const cedula=document.getElementById("m-buscar").value.trim();
+  if(!cedula){document.getElementById("m-info-cliente").innerHTML='<span style="color:var(--warn)">Ingrese una cedula.</span>';return;}
+  mostrarInfoCliente(cedula);
+};
+window.buscarClienteAuto=cedula=>{
+  if(cedula.length>=5) mostrarInfoCliente(cedula.trim());
+  else document.getElementById("m-info-cliente").innerHTML="";
+};
+window.validarCedulaEnForm=cedula=>{
+  if(cedula.length>=5) mostrarInfoCliente(cedula.trim());
+  else { document.getElementById("m-info-cliente").innerHTML=""; document.getElementById("m-nombre").value=""; }
+};
+window.registrarMemb=async()=>{
+  const cedula=document.getElementById("m-cedula").value.trim(), nombre=document.getElementById("m-nombre").value.trim(), plan=document.getElementById("m-plan").value, inicio=document.getElementById("m-inicio").value, fin=document.getElementById("m-fin").value, notas=document.getElementById("m-notas").value.trim(), msg=document.getElementById("m-reg-msg");
+  if(!cedula||!nombre||!plan||!inicio||!fin){msg.textContent="Complete cedula, nombre, plan, inicio y fin.";msg.style.color="var(--danger)";return;}
+  const existing=getLastMemb(cedula);
+  if(existing){
+    const st=membSt(existing);
+    if(st==="activa"||st==="proxima"){
+      const ok=confirm(nombre+" ya tiene una membresia "+(st==="activa"?"activa":"proxima a vencer")+" ("+getPlanLabel(existing.plan)+", vence "+fmt(existing.fin)+").\n\n¿Desea registrar una renovacion de todas formas?");
+      if(!ok)return;
+    }
+  }
+  try{
+    await addDoc(collection(db,"membresias"),{cedula,nombre,plan,inicio,fin,notas,createdBy:currentUser.email,createdAt:serverTimestamp()});
+    msg.textContent="Membresia registrada.";msg.style.color="var(--ok)";
+    ["m-cedula","m-nombre","m-notas","m-fin","m-buscar"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("m-plan").value="";
+    document.getElementById("m-inicio").value=todayISO();
+    document.getElementById("m-info-cliente").innerHTML="";
+    setTimeout(()=>msg.textContent="",3000);
+  }catch(e){msg.textContent="Error.";msg.style.color="var(--danger)";}
+};
+
+window.abrirRenovar=cedula=>{
+  const m=getLastMemb(cedula); if(!m)return;
+  document.getElementById("renov-cedula").value=cedula;
+  document.getElementById("renov-info").textContent=`${m.nombre} — Plan: ${getPlanLabel(m.plan)} · Vence: ${fmt(m.fin)}`;
+  document.getElementById("renov-plan").value=""; document.getElementById("renov-inicio").value=todayISO(); document.getElementById("renov-fin").value=""; document.getElementById("renov-notas").value="";
+  openModal("modal-renovar");
+};
+window.confirmarRenovacion=async()=>{
+  const cedula=document.getElementById("renov-cedula").value, plan=document.getElementById("renov-plan").value, inicio=document.getElementById("renov-inicio").value, fin=document.getElementById("renov-fin").value, notas=document.getElementById("renov-notas").value.trim();
+  if(!plan||!inicio||!fin){alert("Complete plan, inicio y fin.");return;}
+  const m=getLastMemb(cedula);
+  try{ await addDoc(collection(db,"membresias"),{cedula,nombre:m.nombre,plan,inicio,fin,notas,createdBy:currentUser.email,createdAt:serverTimestamp()}); closeModal("modal-renovar"); }
+  catch(e){alert("Error.");}
+};
+
+window.renderClientes=()=>{
+  const fQ=(document.getElementById("mc-q").value||"").toLowerCase();
+  const seen=new Set(); let data=membresias.filter(m=>{ if(seen.has(m.cedula))return false; seen.add(m.cedula);return true; });
+  if(fQ)data=data.filter(m=>m.nombre.toLowerCase().includes(fQ)||m.cedula.includes(fQ));
+  data.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const tb=document.getElementById("tbody-clientes");
+  tb.innerHTML=data.length?data.map(m=>{ const vis=membresias.filter(x=>x.cedula===m.cedula).length; return`<tr><td>${m.cedula}</td><td>${m.nombre}</td><td>${getPlanLabel(m.plan)}</td><td>${fmt(m.inicio)}</td><td>${fmt(m.fin)}</td><td>${mBadge(membSt(m))}</td><td style="text-align:center">${vis}</td><td><button class="btn-sm btn-renew" onclick="abrirRenovar('${m.cedula}')">Renovar</button></td></tr>`; }).join(""):'<tr><td colspan="8" class="empty-state">Sin clientes.</td></tr>';
+};
+
+window.renderEntregables=()=>{
+  const fF=document.getElementById("me-f").value, fQ=(document.getElementById("me-q").value||"").toLowerCase();
+  const seen=new Set();
+  let data=membresias.filter(m=>{ if(seen.has(m.cedula))return false; const st=membSt(m); if(st==="vencida")return false; seen.add(m.cedula);return true; }).map(m=>{ const tp=tasks.some(t=>t.cedula===m.cedula&&t.tipo==="plan"), tv=tasks.some(t=>t.cedula===m.cedula&&t.tipo==="valoracion"), est=tp&&tv?"completo":tp||tv?"parcial":"pendiente"; return{...m,tp,tv,est}; });
+  if(fF)data=data.filter(c=>c.est===fF); if(fQ)data=data.filter(c=>c.nombre.toLowerCase().includes(fQ)||c.cedula.includes(fQ));
+  const tb=document.getElementById("tbody-entregables");
+  tb.innerHTML=data.length?data.map(c=>`<tr>
+    <td>${c.cedula}</td>
+    <td>${c.nombre}</td>
+    <td>${getPlanLabel(c.plan)}</td>
+    <td>${fmt(c.fin)}</td>
+    <td>${c.tp?'<span class="badge b-check">Realizado</span>':'<span class="badge b-missing">Pendiente</span>'}</td>
+    <td>${c.tv?'<span class="badge b-check">Realizado</span>':'<span class="badge b-missing">Pendiente</span>'}</td>
+    <td>${c.est==="completo"?'<span class="badge b-ok">Completo</span>':c.est==="parcial"?'<span class="badge b-warn">Parcial</span>':'<span class="badge b-danger">Pendiente</span>'}</td>
+    <td style="font-size:11px;color:var(--text2);white-space:normal;overflow:visible">${c.notas||'—'}</td>
+  </tr>`).join(""):'<tr><td colspan="8" class="empty-state">Sin clientes activos.</td></tr>';
+};
+
+window.renderMReportes=()=>{
+  const desde=document.getElementById("rep-desde").value, hasta=document.getElementById("rep-hasta").value;
+  const hoy=new Date(); const iniMes=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth(),1)), finMes=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth()+1,0));
+  let data=desde&&hasta?membresias.filter(m=>m.inicio>=desde&&m.inicio<=hasta):membresias;
+  const cc={}; membresias.forEach(m=>cc[m.cedula]=(cc[m.cedula]||0)+1);
+  const nuevos=data.filter(m=>cc[m.cedula]===1).length, renov=data.filter(m=>cc[m.cedula]>1).length, act=data.filter(m=>membSt(m)==="activa").length, venc=data.filter(m=>membSt(m)==="vencida").length;
+  document.getElementById("rep-metrics").innerHTML=`
+    <div class="metric-card"><div class="metric-label">Total en periodo</div><div class="metric-value">${data.length}</div><div class="metric-sub">${nuevos} nuevos · ${renov} renovaciones</div></div>
+    <div class="metric-card"><div class="metric-label">Activas</div><div class="metric-value mv-ok">${act}</div><div class="metric-sub">Del periodo seleccionado</div></div>
+    <div class="metric-card"><div class="metric-label">Vencidas</div><div class="metric-value ${venc===0?"mv-ok":"mv-danger"}">${venc}</div><div class="metric-sub">Sin renovar</div></div>
+    <div class="metric-card"><div class="metric-label">Clientes unicos</div><div class="metric-value">${new Set(data.map(m=>m.cedula)).size}</div><div class="metric-sub">Cedulas distintas</div></div>`;
+  const vencMes=membresias.filter(m=>m.fin>=iniMes&&m.fin<=finMes).sort((a,b)=>a.fin.localeCompare(b.fin));
+  document.getElementById("tbody-vencimientos").innerHTML=vencMes.length?vencMes.map(m=>{ const d=diffDays(m.fin),tp=cc[m.cedula]===1?"nuevo":"renovacion"; return`<tr><td>${m.cedula}</td><td>${m.nombre}</td><td>${getPlanLabel(m.plan)}</td><td>${fmt(m.fin)}</td><td>${d<0?`<span style="color:var(--danger)">${d}d</span>`:d===0?`<span style="color:var(--danger)">Hoy</span>`:`${d}d`}</td><td>${mBadge(membSt(m))}</td><td>${ctBadge(tp)}</td></tr>`; }).join(""):'<tr><td colspan="7" class="empty-state">Sin vencimientos este mes.</td></tr>';
+};
+
+// ══ PLANES ══
+window.agregarPlan=async()=>{
+  const nombre=document.getElementById("np-nombre").value.trim(), dias=document.getElementById("np-dias").value.trim(), desc=document.getElementById("np-desc").value.trim(), msg=document.getElementById("np-msg");
+  if(!nombre||!dias){msg.textContent="Nombre y dias son obligatorios.";msg.style.color="var(--danger)";return;}
+  if(planes.find(p=>p.nombre.toLowerCase()===nombre.toLowerCase())){msg.textContent="Ya existe un plan con ese nombre.";msg.style.color="var(--danger)";return;}
+  try{ await addDoc(collection(db,"planes"),{nombre,dias:parseInt(dias),desc,createdAt:serverTimestamp()}); msg.textContent="Plan agregado.";msg.style.color="var(--ok)"; ["np-nombre","np-dias","np-desc"].forEach(id=>document.getElementById(id).value=""); setTimeout(()=>msg.textContent="",3000); }
+  catch(e){msg.textContent="Error.";msg.style.color="var(--danger)";}
+};
+window.eliminarPlan=async id=>{ if(!confirm("Eliminar este tipo de plan?"))return; try{ await deleteDoc(doc(db,"planes",id)); }catch(e){alert("Error.");} };
+window.renderPlanesAdmin=()=>{
+  const el=document.getElementById("planes-list"); if(!el)return;
+  el.innerHTML=planes.length?planes.map(p=>`<div class="plan-item"><div><div class="plan-item-name">${p.nombre}</div><div class="plan-item-dias">${p.dias} dias${p.desc?` · ${p.desc}`:""}</div></div><button class="btn-sm btn-del" onclick="eliminarPlan('${p.id}')">Eliminar</button></div>`).join(""):'<p style="font-size:12px;color:var(--text3);padding:8px 0">No hay tipos de plan configurados. Agregue el primero.</p>';
+};
+function fillPlanSelects(){
+  ["m-plan","mf-plan","renov-plan"].forEach(id=>{
+    const s=document.getElementById(id); if(!s)return;
+    const isFilter=id==="mf-plan"; const cur=s.value;
+    while(s.options.length>(isFilter?1:0)) s.remove(isFilter?1:0);
+    planes.forEach(p=>{ const o=document.createElement("option"); o.value=p.id; o.textContent=`${p.nombre} (${p.dias} dias)`; s.appendChild(o); });
+    if(cur) s.value=cur;
+  });
+}
+
+// ══ EXPORTS ══
+window.exportTareas=()=>{ const rows=tasks.map(t=>({"Entrenador":gc(t.coachId).name,"Cliente":t.cliente,"Cedula":t.cedula||"","Tipo":t.tipo==="plan"?"Plan":"Valoracion","Fecha":fmt(t.fecha),"Proxima":fmt(nextDateT(t)),"Estado":taskSt(t)==="al_dia"?"Al dia":taskSt(t)==="pendiente"?"Proximo":"Vencido","Intervalo":t.intervalo,"Notas":t.notas||""})); xlsxSave([{name:"Tareas",rows}],"tareas"); };
+window.exportHistorial=()=>{ const data=window._hFilt||tasks; const rows=data.map(t=>({"Fecha":fmt(t.fecha),"Entrenador":gc(t.coachId).name,"Cliente":t.cliente,"Cedula":t.cedula||"","Tipo":t.tipo==="plan"?"Plan":"Valoracion","Proxima":fmt(nextDateT(t)),"Estado":taskSt(t)==="al_dia"?"Al dia":taskSt(t)==="pendiente"?"Proximo":"Vencido","Notas":t.notas||""})); xlsxSave([{name:"Historial",rows}],"historial"); };
+window.exportMemb=()=>{ const data=window._mFilt||membresias; const cc={}; membresias.forEach(m=>cc[m.cedula]=(cc[m.cedula]||0)+1); const rows=data.map(m=>({"Cedula":m.cedula,"Nombre":m.nombre,"Plan":getPlanLabel(m.plan),"Inicio":fmt(m.inicio),"Fin":fmt(m.fin),"Dias rest.":diffDays(m.fin),"Estado":membSt(m)==="activa"?"Activa":membSt(m)==="proxima"?"Por vencer":"Vencida","Tipo":cc[m.cedula]===1?"Nuevo":"Renovacion","Notas":m.notas||""})); xlsxSave([{name:"Membresias",rows}],"membresias"); };
+
+window.exportReporteCompleto=()=>{
+  const desde=document.getElementById("rep-desde").value, hasta=document.getElementById("rep-hasta").value;
+  const hoy=new Date(), iniMes=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth(),1)), finMes=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth()+1,0));
+  const cc={}; membresias.forEach(m=>cc[m.cedula]=(cc[m.cedula]||0)+1);
+  const periodoData=desde&&hasta?membresias.filter(m=>m.inicio>=desde&&m.inicio<=hasta):membresias;
+  const sheets=[
+    {name:"Membresias por periodo", rows: periodoData.map(m=>({"Cedula":m.cedula,"Nombre":m.nombre,"Plan":getPlanLabel(m.plan),"Inicio":fmt(m.inicio),"Fin":fmt(m.fin),"Dias rest.":diffDays(m.fin),"Estado":membSt(m)==="activa"?"Activa":membSt(m)==="proxima"?"Por vencer":"Vencida","Tipo":cc[m.cedula]===1?"Nuevo":"Renovacion"}))},
+    {name:"Vencimientos del mes", rows: membresias.filter(m=>m.fin>=iniMes&&m.fin<=finMes).sort((a,b)=>a.fin.localeCompare(b.fin)).map(m=>({"Cedula":m.cedula,"Nombre":m.nombre,"Plan":getPlanLabel(m.plan),"Vencimiento":fmt(m.fin),"Dias rest.":diffDays(m.fin),"Estado":membSt(m)==="activa"?"Activa":membSt(m)==="proxima"?"Por vencer":"Vencida"}))},
+    {name:"Entregables pendientes", rows: (()=>{ const seen=new Set(); return membresias.filter(m=>{ if(seen.has(m.cedula))return false; if(membSt(m)==="vencida")return false; seen.add(m.cedula);return true; }).map(m=>{ const tp=tasks.some(t=>t.cedula===m.cedula&&t.tipo==="plan"),tv=tasks.some(t=>t.cedula===m.cedula&&t.tipo==="valoracion"); return{"Cedula":m.cedula,"Nombre":m.nombre,"Plan membresia":getPlanLabel(m.plan),"Plan entrena.":tp?"Realizado":"Pendiente","Valoracion":tv?"Realizado":"Pendiente","Estado":tp&&tv?"Completo":tp||tv?"Parcial":"Pendiente"}; }); })()},
+    {name:"Cumplimiento entrenadores", rows: COACHES.map(c=>{ const mt=tasks.filter(t=>String(t.coachId)===c.id),ok=mt.filter(t=>taskSt(t)==="al_dia").length,venc=mt.filter(t=>taskSt(t)==="vencido").length,prox=mt.filter(t=>taskSt(t)==="pendiente").length,pct=mt.length?Math.round(ok/mt.length*100):0; return{"Entrenador":c.name,"Total tareas":mt.length,"Planes":mt.filter(t=>t.tipo==="plan").length,"Valoraciones":mt.filter(t=>t.tipo==="valoracion").length,"Al dia":ok,"Vencidas":venc,"Proximas":prox,"Cumplimiento %":pct}; })},
+  ];
+  xlsxSave(sheets,"reporte_completo");
+};
+
+window.exportBackupCompleto=()=>{
+  const cc={}; membresias.forEach(m=>cc[m.cedula]=(cc[m.cedula]||0)+1);
+  const sheets=[
+    {name:"Tareas", rows: tasks.map(t=>({"ID":t.id,"Entrenador":gc(t.coachId).name,"CoachId":t.coachId,"Cliente":t.cliente,"Cedula":t.cedula||"","Tipo":t.tipo,"Fecha":t.fecha,"Intervalo":t.intervalo,"Notas":t.notas||"","Creado por":t.createdBy||""}))},
+    {name:"Membresias", rows: membresias.map(m=>({"ID":m.id,"Cedula":m.cedula,"Nombre":m.nombre,"Plan ID":m.plan,"Plan":getPlanLabel(m.plan),"Inicio":m.inicio,"Fin":m.fin,"Notas":m.notas||"","Creado por":m.createdBy||""}))},
+    {name:"Planes", rows: planes.map(p=>({"ID":p.id,"Nombre":p.nombre,"Dias":p.dias,"Descripcion":p.desc||""}))},
+  ];
+  xlsxSave(sheets,"backup_"+todayISO());
+};
+
+function xlsxSave(sheets, filename){
+  const wb=XLSX.utils.book_new();
+  sheets.forEach(s=>{ const ws=XLSX.utils.json_to_sheet(s.rows); XLSX.utils.book_append_sheet(wb,ws,s.name); });
+  XLSX.writeFile(wb,`${filename}_${todayISO()}.xlsx`);
+}
+
+// ══ REINICIO ══
+window.ejecutarReinicio=async()=>{
+  const confirm_txt=document.getElementById("reinicio-confirm").value.trim();
+  if(confirm_txt!=="CONFIRMAR"){alert('Escriba CONFIRMAR para continuar.');return;}
+  const delT=document.getElementById("del-tareas").checked, delM=document.getElementById("del-memb").checked;
+  if(!delT&&!delM){alert('Seleccione al menos un modulo para reiniciar.');return;}
+  const queborrar=[]; if(delT)queborrar.push("tareas"); if(delM)queborrar.push("membresias y clientes");
+  if(!confirm("Va a borrar: "+queborrar.join(" y ")+". Esta accion es irreversible."))return;
+  try{
+    if(delT){ const snap=await getDocs(collection(db,"tasks")); const batch=writeBatch(db); snap.docs.forEach(d=>batch.delete(d.ref)); await batch.commit(); }
+    if(delM){ const snap=await getDocs(collection(db,"membresias")); const batch=writeBatch(db); snap.docs.forEach(d=>batch.delete(d.ref)); await batch.commit(); }
+    closeModal("modal-reinicio"); document.getElementById("reinicio-confirm").value=""; document.getElementById("del-tareas").checked=false; document.getElementById("del-memb").checked=false;
+    alert("Reinicio completado. Los datos seleccionados han sido eliminados.");
+  }catch(e){alert("Error al reiniciar: "+e.message);}
+};
+
+// ── INITS ──
+function initSelects(){
+  ["sf-coa","h-coach","reg-coach","edit-coach"].forEach(id=>{
+    const s=document.getElementById(id); if(!s)return;
+    const isFilter=["sf-coa","h-coach"].includes(id);
+    while(s.options.length>(isFilter?1:0)) s.remove(isFilter?1:0);
+    COACHES.forEach(c=>{ const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; s.appendChild(o); });
+  });
+  document.getElementById("reg-fecha").value=todayISO();
+  const hd=new Date(); hd.setMonth(hd.getMonth()-3);
+  document.getElementById("h-desde").value=fmtISO(hd);
+  document.getElementById("h-hasta").value=fmtISO(new Date(Date.now()+90*864e5));
+  const hoy=new Date();
+  document.getElementById("rep-desde").value=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth(),1));
+  document.getElementById("rep-hasta").value=fmtISO(new Date(hoy.getFullYear(),hoy.getMonth()+1,0));
+}
+
+// Auto-calcular fecha fin al cambiar plan o inicio en formularios
+["m-plan","m-inicio"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{
+  const planId=document.getElementById("m-plan").value, inicio=document.getElementById("m-inicio").value;
+  if(planId&&inicio){ const dias=getPlanDias(planId); if(dias>0) document.getElementById("m-fin").value=fmtISO(addD(inicio,dias)); }
+}));
+["renov-plan","renov-inicio"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{
+  const planId=document.getElementById("renov-plan").value, inicio=document.getElementById("renov-inicio").value;
+  if(planId&&inicio){ const dias=getPlanDias(planId); if(dias>0) document.getElementById("renov-fin").value=fmtISO(addD(inicio,dias)); }
+}));
+</script>
+</body>
+</html>
