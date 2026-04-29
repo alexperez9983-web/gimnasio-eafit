@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gimnasio EAFIT — Sistema de Gestión + Reportes</title>
+  
+  <!-- Firebase SDK v10 (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  
+  <!-- Chart.js para gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js Date Adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --eafit-blue: #003366; --eafit-light: #0055a4; --eafit-accent: #ff6600;
+      --bg-light: #f5f7fa; --text-dark: #1a1a1a; --border: #e2e8f0;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --radius: 8px; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg-light); color: var(--text-dark); line-height: 1.5; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+    header { background: var(--eafit-blue); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    header h1 { font-size: 1.25rem; }
+    .btn { background: var(--eafit-light); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .btn:hover { background: #002244; transform: translateY(-1px); }
+    .btn.secondary { background: #e2e8f0; color: var(--text-dark); }
+    .btn.accent { background: var(--eafit-accent); }
+    .btn.danger { background: var(--danger); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.25rem; margin-bottom: 1rem; }
+    .grid { display: grid; gap: 1rem; }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; }
+    label { display: block; margin-bottom: 0.25rem; font-weight: 500; font-size: 0.9rem; }
+    .form-group { margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.9rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f8fafc; font-weight: 600; }
+    tr:hover { background: #f1f5f9; }
+    .badge { padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .badge.success { background: #d1fae5; color: #065f46; }
+    .badge.warning { background: #fef3c7; color: #92400e; }
+    .badge.danger { background: #fee2e2; color: #991b1b; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 1rem 1.5rem; border-radius: var(--radius); color: white; z-index: 1000; transform: translateY(100px); transition: 0.3s; box-shadow: var(--shadow); }
+    .toast.show { transform: translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: #1a1a1a; }
+    .hidden { display: none !important; }
+    dialog { border: none; border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; max-width: 500px; width: 95%; margin: auto; }
+    dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+    dialog .content { padding: 1.5rem; }
+    dialog .actions { padding: 1rem; background: #f8fafc; display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border); }
+    .search-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .search-bar input, .search-bar select { flex: 1; min-width: 150px; }
+    .nav-tabs { display: flex; gap: 0.25rem; overflow-x: auto; margin-bottom: 1rem; padding-bottom: 0.25rem; }
+    .nav-tab { padding: 0.5rem 1rem; border-radius: var(--radius); cursor: pointer; white-space: nowrap; font-size: 0.9rem; }
+    .nav-tab.active { background: var(--eafit-light); color: white; font-weight: 500; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .stat-card { background: white; padding: 0.75rem; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); border-left: 4px solid var(--eafit-light); }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--eafit-blue); }
+    .stat-label { font-size: 0.8rem; color: #64748b; }
+    
+    /* Estilos para gráficos */
+    .chart-container { position: relative; height: 280px; width: 100%; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .chart-actions { display: flex; gap: 0.5rem; }
+    .chart-actions button { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+    
+    /* Heatmap simple con CSS */
+    .heatmap { display: grid; grid-template-columns: 60px repeat(24, 1fr); gap: 2px; font-size: 0.7rem; }
+    .heatmap-header { font-weight: 600; text-align: center; padding: 0.25rem; }
+    .heatmap-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 0.5rem; color: #64748b; }
+    .heatmap-cell { aspect-ratio: 1; border-radius: 3px; cursor: pointer; transition: 0.15s; }
+    .heatmap-cell:hover { transform: scale(1.1); z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .heatmap-cell[data-level="0"] { background: #f1f5f9; }
+    .heatmap-cell[data-level="1"] { background: #bfdbfe; }
+    .heatmap-cell[data-level="2"] { background: #93c5fd; }
+    .heatmap-cell[data-level="3"] { background: #60a5fa; }
+    .heatmap-cell[data-level="4"] { background: #3b82f6; }
+    .heatmap-cell[data-level="5"] { background: #2563eb; }
+    
+    /* Filtros de reporte */
+    .report-filters { background: #f8fafc; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end; }
+    .report-filters .form-group { margin-bottom: 0; min-width: 150px; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      table { font-size: 0.8rem; }
+      header { flex-direction: column; text-align: center; }
+      .nav-tabs { justify-content: center; }
+      .chart-container { height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏋️ Gimnasio EAFIT — Reportes</h1>
+    <div id="auth-buttons">
+      <button class="btn" onclick="showView('login')">Ingresar</button>
+    </div>
+    <div id="user-menu" class="hidden">
+      <span id="user-email" style="margin-right: 0.5rem;"></span>
+      <button class="btn secondary" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- VISTAS DE AUTENTICACIÓN (Login, Register, Reset) -->
+    <section id="view-login" class="view">
+      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+        <h2 style="margin-bottom: 1rem;">Acceso al Sistema</h2>
+        <form id="login-form">
+          <div class="form-group"><label>Correo</label><input type="email" id="login-email" required></div>
+          <div class="form-group"><label>Contraseña</label><input type="password" id="login-password" required minlength="6"></div>
+          <button type="submit" class="btn" style="width: 100%;">Ingresar</button>
+          <div style="margin-top: 1rem; text-align: center;">
+            <a href="#" onclick="showView('register')" style="color: var(--eafit-light);">Crear cuenta</a> | 
+            <a href="#" onclick="showView('reset')" style="color: var(--eafit-light);">Olvidé mi contraseña</a>
+          </div>
+        </form>
+      </div>
+    </section>
+    <section id="view-register" class="view hidden">
+      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+        <h2 style="margin-bottom: 1rem;">Crear Cuenta</h2>
+        <form id="register-form">
+          <div class="form-group"><label>Correo</label><input type="email" id="reg-email" required></div>
+          <div class="form-group"><label>Contraseña (min 6)</label><input type="password" id="reg-pass" required minlength="6"></div>
+          <div class="form-group"><label>Confirmar</label><input type="password" id="reg-confirm" required minlength="6"></div>
+          <button type="submit" class="btn" style="width: 100%;">Crear cuenta</button>
+          <div style="margin-top: 1rem; text-align: center;">
+            <a href="#" onclick="showView('login')" style="color: var(--eafit-light);">← Volver</a>
+          </div>
+        </form>
+      </div>
+    </section>
+    <section id="view-reset" class="view hidden">
+      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+        <h2 style="margin-bottom: 1rem;">Recuperar Contraseña</h2>
+        <form id="reset-form">
+          <div class="form-group"><label>Correo</label><input type="email" id="reset-email" required></div>
+          <button type="submit" class="btn" style="width: 100%;">Enviar enlace</button>
+          <div style="margin-top: 1rem; text-align: center;">
+            <a href="#" onclick="showView('login')" style="color: var(--eafit-light);">← Volver</a>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- VISTA: DASHBOARD CON REPORTES -->
+    <section id="view-dashboard" class="view hidden">
+      <!-- Stats Resumen -->
+      <div class="stats">
+        <div class="stat-card"><div class="stat-value" id="stat-clients">0</div><div class="stat-label">Clientes</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">Membresías Activas</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-bookings">0</div><div class="stat-label">Reservas Hoy</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-revenue">$0</div><div class="stat-label">Ingresos Mes</div></div>
+      </div>
+
+      <!-- Tabs de Navegación -->
+      <div class="nav-tabs">
+        <div class="nav-tab" onclick="switchTab('clients')">Personas</div>
+        <div class="nav-tab" onclick="switchTab('memberships')">Membresías</div>
+        <div class="nav-tab" onclick="switchTab('bookings')">Canchas</div>
+        <div class="nav-tab active" onclick="switchTab('reports'); renderCharts()">📊 Reportes</div>
+      </div>
+
+      <!-- TAB: REPORTES GRÁFICOS -->
+      <div id="tab-reports" class="tab-content">
+        <!-- Filtros de Reporte -->
+        <div class="report-filters">
+          <div class="form-group">
+            <label>Periodo</label>
+            <select id="report-period" onchange="updateCharts()">
+              <option value="7">Últimos 7 días</option>
+              <option value="30" selected>Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="custom">Personalizado</option>
+            </select>
+          </div>
+          <div class="form-group" id="date-range" style="display:none;">
+            <label>Desde</label>
+            <input type="date" id="date-from">
+          </div>
+          <div class="form-group" id="date-range-to" style="display:none;">
+            <label>Hasta</label>
+            <input type="date" id="date-to">
+          </div>
+          <div class="form-group">
+            <label>Cancha</label>
+            <select id="filter-court" onchange="updateCharts()">
+              <option value="all">Todas</option>
+              <option value="Cancha 1">Cancha 1</option>
+              <option value="Cancha 2">Cancha 2</option>
+              <option value="Cancha 3">Cancha 3</option>
+            </select>
+          </div>
+          <button class="btn" onclick="exportReport()">📥 Exportar</button>
+        </div>
+
+        <!-- Gráficos Principales -->
+        <div class="grid grid-2">
+          <!-- Gráfico 1: Ocupación por Cancha -->
+          <div class="card">
+            <div class="chart-header">
+              <h3>🏟 Ocupación por Cancha</h3>
+              <div class="chart-actions">
+                <button class="btn secondary" onclick="refreshChart('court')">↻</button>
+              </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-courts"></canvas></div>
+          </div>
+          
+          <!-- Gráfico 2: Estado Membresías -->
+          <div class="card">
+            <div class="chart-header">
+              <h3>🏷 Estado de Membresías</h3>
+              <div class="chart-actions">
+                <button class="btn secondary" onclick="refreshChart('memberships')">↻</button>
+              </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-memberships"></canvas></div>
+          </div>
+          
+          <!-- Gráfico 3: Ingresos Mensuales -->
+          <div class="card">
+            <div class="chart-header">
+              <h3>💰 Ingresos Diarios</h3>
+              <div class="chart-actions">
+                <button class="btn secondary" onclick="refreshChart('revenue')">↻</button>
+              </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-revenue"></canvas></div>
+          </div>
+          
+          <!-- Gráfico 4: Retención de Clientes -->
+          <div class="card">
+            <div class="chart-header">
+              <h3>🔄 Retención de Clientes</h3>
+              <div class="chart-actions">
+                <button class="btn secondary" onclick="refreshChart('retention')">↻</button>
+              </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-retention"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Heatmap de Horas Pico -->
+        <div class="card">
+          <div class="chart-header">
+            <h3>🔥 Horas Pico de Reservas</h3>
+            <small style="color: #64748b;">Intensidad = número de reservas</small>
+          </div>
+          <div id="heatmap-container" class="heatmap"></div>
+          <div style="display: flex; gap: 1rem; margin-top: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 0.8rem; color: #64748b;">Leyenda:</span>
+            <div style="display: flex; gap: 0.25rem; align-items: center;">
+              <span class="heatmap-cell" data-level="0" style="width: 20px; height: 20px;"></span><small>0</small>
+              <span class="heatmap-cell" data-level="2" style="width: 20px; height: 20px;"></span><small>1-2</small>
+              <span class="heatmap-cell" data-level="4" style="width: 20px; height: 20px;"></span><small>3-4</small>
+              <span class="heatmap-cell" data-level="5" style="width: 20px; height: 20px;"></span><small>5+</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Top Usuarios -->
+        <div class="card">
+          <h3>👑 Top 10 Usuarios Frecuentes</h3>
+          <table id="table-top-users">
+            <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Reservas</th><th>Última Visita</th><th>Membresía</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Otros tabs (clientes, membresías, canchas) se mantienen ocultos por brevedad -->
+      <div id="tab-clients" class="tab-content hidden"><div class="card"><p>Directorio de personas...</p></div></div>
+      <div id="tab-memberships" class="tab-content hidden"><div class="card"><p>Gestión de membresías...</p></div></div>
+      <div id="tab-bookings" class="tab-content hidden"><div class="card"><p>Reservas de canchas...</p></div></div>
+    </section>
+  </main>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    //  1️⃣ Configuración (debe ir ANTES de cualquier llamada a firebase)
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+  };
+
+  // 2️⃣ Inicialización SEGURA
+  let auth, db;
+  try {
+    if (typeof firebase !== 'undefined') {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+    } else {
+      console.error("❌ Firebase SDK no cargó. Verifica los <script> del CDN");
+    }
+  } catch (e) {
+    console.error("Error init Firebase:", e);
+  }
+
+  // 3️⃣ Handler de Recuperación de Contraseña (con validación explícita)
+  document.addEventListener('DOMContentLoaded', () => {
+    const resetForm = document.getElementById('reset-form');
+    if (resetForm) {
+      resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!auth) {
+          showToast("Firebase no está inicializado. Revisa la consola (F12).", "error");
+          return;
+        }
+        const email = document.getElementById('reset-email').value.trim();
+        if (!email || !email.includes('@')) {
+          showToast("Ingresa un correo válido", "warning");
+          return;
+        }
+        try {
+          await auth.sendPasswordResetEmail(email);
+          showToast("✅ Enlace enviado. Revisa tu bandeja o spam.", "success");
+          resetForm.reset();
+        } catch (error) {
+          console.error(error);
+          showToast("❌ " + error.message, "error");
+        }
+      });
+    }
+  });
+
+  // Utilidad Toast
+  function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast') || document.createElement('div');
+    if (!t.id) {
+      t.id = 'toast'; t.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px;border-radius:8px;color:#fff;z-index:9999;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.background = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+    t.style.opacity = '1';
+    setTimeout(() => t.style.opacity = '0', 3000);
+  }
+</script>
+
+    // 🔄 Autenticación
+    function setupAuthListener() {
+      auth?.onAuthStateChanged(user => {
+        currentUser = user;
+        if (user) {
+          document.getElementById('auth-buttons').classList.add('hidden');
+          document.getElementById('user-menu').classList.remove('hidden');
+          document.getElementById('user-email').textContent = user.email;
+          showView('dashboard');
+          switchTab('reports');
+          renderCharts();
+        } else {
+          document.getElementById('auth-buttons').classList.remove('hidden');
+          document.getElementById('user-menu').classList.add('hidden');
+          showView('login');
+        }
+      });
+    }
+
+    document.getElementById('login-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        await auth.signInWithEmailAndPassword(
+          document.getElementById('login-email').value,
+          document.getElementById('login-password').value
+        );
+        showToast("Sesión iniciada", "success");
+      } catch (err) { showToast("Error: " + err.message, "error"); }
+    });
+
+    document.getElementById('register-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const pass = document.getElementById('reg-pass').value;
+      if (pass !== document.getElementById('reg-confirm').value) 
+        return showToast("Contraseñas no coinciden", "error");
+      try {
+        await auth.createUserWithEmailAndPassword(
+          document.getElementById('reg-email').value, pass
+        );
+        showToast("Cuenta creada", "success");
+      } catch (err) { showToast("Error: " + err.message, "error"); }
+    });
+
+    document.getElementById('reset-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        await auth.sendPasswordResetEmail(document.getElementById('reset-email').value);
+        showToast("Enviado. Revisa tu correo", "success");
+      } catch (err) { showToast("Error: " + err.message, "error"); }
+    });
+
+    function logout() { auth?.signOut(); }
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      document.getElementById(`view-${id}`)?.classList.remove('hidden');
+    }
+    function switchTab(id) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+      document.getElementById(`tab-${id}`)?.classList.remove('hidden');
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+      event?.target?.classList.add('active');
+    }
+
+    // 📊 SISTEMA DE GRÁFICOS CON CHART.JS
+    function renderCharts(demoMode = false) {
+      if (demoMode) {
+        // Datos de ejemplo para demostración
+        renderCourtChart(getDemoData('courts'));
+        renderMembershipsChart(getDemoData('memberships'));
+        renderRevenueChart(getDemoData('revenue'));
+        renderRetentionChart(getDemoData('retention'));
+        renderHeatmap(getDemoData('heatmap'));
+        renderTopUsers(getDemoData('topUsers'));
+        updateStats(true);
+        return;
+      }
+
+      if (!db) return showToast("Firebase no configurado", "warning");
+      
+      // Cargar datos reales de Firestore
+      Promise.all([
+        db.collection('bookings').get(),
+        db.collection('memberships').get(),
+        db.collection('clients').get()
+      ]).then(([bookingsSnap, membersSnap, clientsSnap]) => {
+        const bookings = bookingsSnap.docs.map(d => d.data());
+        const memberships = membersSnap.docs.map(d => d.data());
+        const clients = clientsSnap.docs.map(d => d.data());
+        
+        renderCourtChart(processCourtData(bookings));
+        renderMembershipsChart(processMembershipData(memberships));
+        renderRevenueChart(processRevenueData(bookings));
+        renderRetentionChart(processRetentionData(memberships));
+        renderHeatmap(processHeatmapData(bookings));
+        renderTopUsers(processTopUsersData(bookings, clients));
+        updateStats(false, clients, memberships, bookings);
+      }).catch(err => {
+        console.error("Error cargando datos:", err);
+        showToast("Error cargando datos. Usando modo demo.", "warning");
+        renderCharts(true);
+      });
+    }
+
+    // === FUNCIONES DE RENDERIZADO DE GRÁFICOS ===
+    
+    function renderCourtChart(data) {
+      const ctx = document.getElementById('chart-courts');
+      if (!ctx) return;
+      if (charts.court) charts.court.destroy();
+      
+      charts.court = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Reservas',
+            data: data.values,
+            backgroundColor: ['#003366', '#0055a4', '#ff6600'],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderMembershipsChart(data) {
+      const ctx = document.getElementById('chart-memberships');
+      if (!ctx) return;
+      if (charts.memberships) charts.memberships.destroy();
+      
+      charts.memberships = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            data: data.values,
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderWidth: 0,
+            spacing: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true } }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    function renderRevenueChart(data) {
+      const ctx = document.getElementById('chart-revenue');
+      if (!ctx) return;
+      if (charts.revenue) charts.revenue.destroy();
+      
+      charts.revenue = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Ingresos ($)',
+            data: data.values,
+            borderColor: '#003366',
+            backgroundColor: 'rgba(0, 51, 102, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { color: '#f1f5f9' },
+              ticks: { callback: v => '$' + v.toLocaleString('es-CO') }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderRetentionChart(data) {
+      const ctx = document.getElementById('chart-retention');
+      if (!ctx) return;
+      if (charts.retention) charts.retention.destroy();
+      
+      charts.retention = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Retención %',
+            data: data.values,
+            borderColor: '#ff6600',
+            backgroundColor: 'rgba(255, 102, 0, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { 
+              min: 0, max: 100,
+              grid: { color: '#f1f5f9' },
+              ticks: { callback: v => v + '%' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderHeatmap(data) {
+      const container = document.getElementById('heatmap-container');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      // Header de horas
+      container.appendChild(document.createElement('div')); // esquina vacía
+      for (let h = 6; h <= 23; h++) {
+        const el = document.createElement('div');
+        el.className = 'heatmap-header';
+        el.textContent = `${h}:00`;
+        container.appendChild(el);
+      }
+      
+      // Filas por día
+      const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      days.forEach(day => {
+        const label = document.createElement('div');
+        label.className = 'heatmap-label';
+        label.textContent = day;
+        container.appendChild(label);
+        
+        for (let h = 6; h <= 23; h++) {
+          const cell = document.createElement('div');
+          cell.className = 'heatmap-cell';
+          const key = `${day}-${h}`;
+          const level = data[key] || 0;
+          cell.dataset.level = Math.min(5, Math.floor(level / 2));
+          cell.title = `${day} ${h}:00 - ${level} reservas`;
+          container.appendChild(cell);
+        }
+      });
+    }
+
+    function renderTopUsers(data) {
+      const tbody = document.querySelector('#table-top-users tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      
+      data.forEach((user, i) => {
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>#${i+1}</strong></td>
+            <td>${sanitize(user.name)}</td>
+            <td>${sanitize(user.email)}</td>
+            <td><span class="badge success">${user.bookings}</span></td>
+            <td>${user.lastVisit}</td>
+            <td><span class="badge ${user.status === 'Activa' ? 'success' : 'warning'}">${user.status}</span></td>
+          </tr>
+        `);
+      });
+    }
+
+    // === PROCESAMIENTO DE DATOS ===
+    
+    function processCourtData(bookings) {
+      const counts = { 'Cancha 1': 0, 'Cancha 2': 0, 'Cancha 3': 0 };
+      const daysAgo = parseInt(document.getElementById('report-period')?.value) || 30;
+      const cutoff = new Date(Date.now() - daysAgo * 24*60*60*1000);
+      
+      bookings.forEach(b => {
+        if (new Date(b.fecha) >= cutoff && counts[b.cancha] !== undefined) {
+          counts[b.cancha]++;
+        }
+      });
+      
+      return {
+        labels: Object.keys(counts),
+        values: Object.values(counts)
+      };
+    }
+
+    function processMembershipData(memberships) {
+      const today = new Date();
+      const stats = { 'Al día': 0, 'Por vencer': 0, 'Vencida': 0 };
+      
+      memberships.forEach(m => {
+        const end = new Date(m.fin);
+        const daysLeft = Math.ceil((end - today) / (1000*60*60*24));
+        if (daysLeft < 0) stats['Vencida']++;
+        else if (daysLeft <= 7) stats['Por vencer']++;
+        else stats['Al día']++;
+      });
+      
+      return {
+        labels: Object.keys(stats),
+        values: Object.values(stats)
+      };
+    }
+
+    function processRevenueData(bookings) {
+      const days = 30;
+      const labels = [], values = [];
+      const revenue = {};
+      
+      // Inicializar últimos N días
+      for (let i = days-1; i >= 0; i--) {
+        const date = new Date(Date.now() - i*24*60*60*1000);
+        const key = date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+        labels.push(key);
+        revenue[key] = 0;
+      }
+      
+      // Sumar ingresos
+      bookings.forEach(b => {
+        const date = new Date(b.fecha);
+        const key = date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+        if (revenue[key] !== undefined) {
+          revenue[key] += b.valor || 80000; // valor por defecto si no existe
+        }
+      });
+      
+      return { labels, values: labels.map(l => revenue[l]) };
+    }
+
+    function processRetentionData(memberships) {
+      // Simulación de retención mensual (en producción, calcular con historial real)
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+      return {
+        labels: months,
+        values: [78, 82, 79, 85, 88, 91] // % de retención
+      };
+    }
+
+    function processHeatmapData(bookings) {
+      const data = {};
+      const daysES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      
+      bookings.forEach(b => {
+        const date = new Date(b.fecha);
+        const day = daysES[date.getDay()];
+        const hour = parseInt(b.hora?.split(':')[0]) || 18;
+        const key = `${day}-${hour}`;
+        data[key] = (data[key] || 0) + 1;
+      });
+      
+      return data;
+    }
+
+    function processTopUsersData(bookings, clients) {
+      const userStats = {};
+      
+      bookings.forEach(b => {
+        const key = b.cedula || b.email;
+        if (!userStats[key]) {
+          const client = clients.find(c => c.cedula === b.cedula || c.email === b.email);
+          userStats[key] = {
+            name: client?.nombre || b.nombre || 'Sin nombre',
+            email: b.email || client?.email || '-',
+            bookings: 0,
+            lastVisit: b.fecha || '-',
+            status: 'Activa'
+          };
+        }
+        userStats[key].bookings++;
+        if (b.fecha > userStats[key].lastVisit) userStats[key].lastVisit = b.fecha;
+      });
+      
+      return Object.values(userStats)
+        .sort((a, b) => b.bookings - a.bookings)
+        .slice(0, 10);
+    }
+
+    // === UTILIDADES ===
+    
+    function updateCharts() {
+      const period = document.getElementById('report-period').value;
+      document.getElementById('date-range').style.display = 
+      document.getElementById('date-range-to').style.display = 
+        period === 'custom' ? 'block' : 'none';
+      renderCharts(firebaseConfig.apiKey === "TU_API_KEY");
+    }
+
+    function refreshChart(type) {
+      showToast("Actualizando...", "info");
+      setTimeout(() => {
+        renderCharts(firebaseConfig.apiKey === "TU_API_KEY");
+        showToast("Gráficos actualizados", "success");
+      }, 500);
+    }
+
+    function exportReport() {
+      // Simulación de exportación
+      const data = {
+        fecha: new Date().toISOString(),
+        periodo: document.getElementById('report-period').value,
+        resumen: {
+          clientes: document.getElementById('stat-clients').textContent,
+          ingresos: document.getElementById('stat-revenue').textContent,
+          reservas: document.getElementById('stat-bookings').textContent
+        }
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte-gimnasio-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      
+      showToast("Reporte exportado ✅", "success");
+    }
+
+    function updateStats(demo, clients = [], memberships = [], bookings = []) {
+      if (demo) {
+        document.getElementById('stat-clients').textContent = '248';
+        document.getElementById('stat-active').textContent = '189';
+        document.getElementById('stat-bookings').textContent = '12';
+        document.getElementById('stat-revenue').textContent = '$4.2M';
+        return;
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      const active = memberships.filter(m => new Date(m.fin) >= new Date()).length;
+      const todayBookings = bookings.filter(b => b.fecha === today).length;
+      const revenue = bookings
+        .filter(b => b.fecha?.startsWith(today.slice(0,7))) // mismo mes
+        .reduce((sum, b) => sum + (b.valor || 80000), 0);
+      
+      document.getElementById('stat-clients').textContent = clients.length;
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-bookings').textContent = todayBookings;
+      document.getElementById('stat-revenue').textContent = 
+        '$' + (revenue/1000000).toFixed(1) + 'M';
+    }
+
+    function getDemoData(type) {
+      const demos = {
+        courts: { labels: ['Cancha 1', 'Cancha 2', 'Cancha 3'], values: [42, 38, 29] },
+        memberships: { labels: ['Al día', 'Por vencer', 'Vencida'], values: [156, 23, 12] },
+        revenue: { 
+          labels: ['01/04','05/04','09/04','13/04','17/04','21/04','25/04','29/04'], 
+          values: [320, 450, 380, 520, 410, 680, 590, 720] 
+        },
+        retention: { labels: ['Ene','Feb','Mar','Abr','May','Jun'], values: [78,82,79,85,88,91] },
+        heatmap: { 'Lun-18': 5, 'Lun-19': 7, 'Mar-17': 4, 'Mié-20': 6, 'Jue-18': 8, 'Vie-19': 9, 'Sáb-10': 6, 'Sáb-16': 7 },
+        topUsers: [
+          { name: 'Ana María López', email: 'ana.lopez@email.com', bookings: 24, lastVisit: '28/04', status: 'Activa' },
+          { name: 'Carlos Restrepo', email: 'carlos.r@email.com', bookings: 19, lastVisit: '27/04', status: 'Activa' },
+          { name: 'María Fernanda', email: 'mf.gomez@email.com', bookings: 17, lastVisit: '26/04', status: 'Por vencer' },
+          { name: 'Juan Pablo S.', email: 'jp.sanchez@email.com', bookings: 15, lastVisit: '25/04', status: 'Activa' },
+          { name: 'Laura Martínez', email: 'laura.m@email.com', bookings: 14, lastVisit: '24/04', status: 'Activa' }
+        ]
+      };
+      return demos[type] || {};
+    }
+
+    function sanitize(str) { 
+      return str ? String(str).replace(/</g, "&lt;").replace(/>/g, "&gt;") : '-'; 
+    }
+
+    function showToast(msg, type = 'info') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // Mostrar login por defecto
+    if (firebaseConfig.apiKey === "TU_API_KEY") {
+      showToast("💡 Configura Firebase para usar datos reales", "warning");
+    }
+  </script>
+</body>
+</html>
