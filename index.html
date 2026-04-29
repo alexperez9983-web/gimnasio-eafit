@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gimnasio EAFIT — Sistema de gestión</title>
+  <style>
+    :root { --primary: #0056b3; --secondary: #6c757d; --danger: #dc3545; --success: #28a745; --light: #f8f9fa; --dark: #212529; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--light); color: var(--dark); line-height: 1.5; }
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: 240px; background: var(--dark); color: #fff; padding: 1rem; }
+    .main-content { flex: 1; padding: 1.5rem; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 1.25rem; margin-bottom: 1.25rem; }
+    .form-group { margin-bottom: 0.9rem; }
+    label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.95rem; }
+    input, select, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; }
+    button { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.95rem; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: var(--secondary); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { padding: 0.6rem; border: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f1f3f5; }
+    .hidden { display: none !important; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal { background: #fff; padding: 1.5rem; border-radius: 8px; max-width: 450px; width: 90%; }
+    nav a { color: #adb5bd; text-decoration: none; display: block; padding: 0.5rem 0; transition: 0.2s; }
+    nav a:hover, nav a.active { color: #fff; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <!-- 🔐 AUTENTICACIÓN -->
+  <section id="auth-screen" class="card" style="max-width: 400px; margin: 10vh auto;">
+    <h2 style="text-align:center; margin-bottom:0.5rem;">Gimnasio EAFIT</h2>
+    <p style="text-align:center; color:#6c757d; margin-bottom:1.5rem;">Sistema de gestión integral</p>
+    
+    <form id="login-form">
+      <div class="form-group">
+        <label for="login-email">Correo</label>
+        <input type="email" id="login-email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" name="password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%">Ingresar</button>
+      <div class="actions" style="justify-content: space-between; margin-top:1rem;">
+        <a href="#" id="show-forgot" style="color:var(--primary); font-size:0.9rem;">¿Olvidé mi contraseña?</a>
+        <a href="#" id="show-register" style="color:var(--primary); font-size:0.9rem;">Crear cuenta</a>
+      </div>
+    </form>
+
+    <form id="forgot-form" class="hidden">
+      <h3>Recuperar acceso</h3>
+      <div class="form-group"><label for="forgot-email">Correo</label><input type="email" id="forgot-email" required></div>
+      <button type="submit" class="btn-primary" style="width:100%">Enviar enlace</button>
+      <button type="button" id="back-to-login" class="btn-secondary" style="width:100%; margin-top:0.5rem;">← Volver</button>
+    </form>
+
+    <form id="register-form" class="hidden">
+      <h3>Crear cuenta</h3>
+      <div class="form-group"><label for="reg-email">Correo</label><input type="email" id="reg-email" required></div>
+      <div class="form-group"><label for="reg-password">Contraseña (mín. 6 caracteres)</label><input type="password" id="reg-password" minlength="6" required></div>
+      <div class="form-group"><label for="reg-confirm">Confirmar contraseña</label><input type="password" id="reg-confirm" minlength="6" required></div>
+      <button type="submit" class="btn-primary" style="width:100%">Crear cuenta</button>
+      <button type="button" id="back-to-login-reg" class="btn-secondary" style="width:100%; margin-top:0.5rem;">← Volver</button>
+    </form>
+  </section>
+
+  <!-- 🖥️ APLICACIÓN PRINCIPAL -->
+  <div id="main-app" class="app-container hidden">
+    <aside class="sidebar">
+      <h3 style="margin-bottom:1rem;">Panel</h3>
+      <nav>
+        <a href="#" class="nav-link active" data-target="dashboard">⚡ Centro de gestión</a>
+        <a href="#" class="nav-link" data-target="clients">👥 Directorio</a>
+        <a href="#" class="nav-link" data-target="memberships">🏷 Membresías</a>
+        <a href="#" class="nav-link" data-target="training">🏋️ Entrenamientos</a>
+        <a href="#" class="nav-link" data-target="courts">⚽ Canchas</a>
+        <a href="#" class="nav-link" data-target="reports">📊 Reportes</a>
+        <a href="#" class="nav-link" data-target="config">⚙️ Configuración</a>
+        <a href="#" id="logout-btn" style="color:#ff6b6b; margin-top:1.5rem;">Cerrar sesión</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <!-- Dashboard -->
+      <section id="dashboard" class="app-section">
+        <h1>Centro de gestión</h1>
+        <div class="card">
+          <p>Selecciona un módulo del menú lateral o usa los accesos rápidos:</p>
+          <div class="grid-2" style="margin-top:1rem;">
+            <button class="btn-primary" onclick="showSection('clients')">+ Nueva persona</button>
+            <button class="btn-primary" onclick="showSection('training')">Registrar tarea</button>
+            <button class="btn-primary" onclick="showSection('courts')">Reservar cancha</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Directorio -->
+      <section id="clients" class="app-section hidden">
+        <h1>Directorio de Personas</h1>
+        <div class="card">
+          <h3>Registrar nueva persona</h3>
+          <form id="client-form">
+            <div class="grid-2">
+              <div class="form-group"><label for="client-cedula">Cédula *</label><input type="text" id="client-cedula" required></div>
+              <div class="form-group"><label for="client-name">Nombre *</label><input type="text" id="client-name" required></div>
+              <div class="form-group"><label for="client-email">Email</label><input type="email" id="client-email"></div>
+              <div class="form-group"><label for="client-phone">Teléfono</label><input type="tel" id="client-phone"></div>
+              <div class="form-group"><label for="client-birth">Fecha nacimiento</label><input type="date" id="client-birth"></div>
+              <div class="form-group"><label for="client-address">Dirección</label><input type="text" id="client-address"></div>
+            </div>
+            <div class="actions"><button type="submit" class="btn-primary">Guardar</button><button type="reset" class="btn-secondary">Cancelar</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Listado</h3>
+          <table>
+            <thead><tr><th>Cédula</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Membresía</th><th>Próx. reserva</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="7" style="text-align:center; color:#888;">Sin registros aún</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Membresías -->
+      <section id="memberships" class="app-section hidden">
+        <h1>Gestión de Membresías</h1>
+        <div class="card">
+          <h3>Registrar / Renovar membresía</h3>
+          <form id="membership-form">
+            <div class="grid-2">
+              <div class="form-group"><label for="mem-cedula">Cédula *</label><input type="text" id="mem-cedula" required></div>
+              <div class="form-group"><label for="mem-name">Nombre *</label><input type="text" id="mem-name" required></div>
+              <div class="form-group"><label for="mem-plan">Plan *</label><select id="mem-plan" required><option value="">— Seleccione —</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
+              <div class="form-group"><label for="mem-start">Inicio *</label><input type="date" id="mem-start" required></div>
+              <div class="form-group"><label for="mem-end">Fin *</label><input type="date" id="mem-end" required></div>
+              <div class="form-group"><label for="mem-notes">Notas</label><textarea id="mem-notes" rows="2"></textarea></div>
+            </div>
+            <div class="actions"><button type="submit" class="btn-primary">Registrar membresía</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Cédula</th><th>Nombre</th><th>Plan</th><th>Inicio</th><th>Vencimiento</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody><tr><td colspan="7" style="text-align:center; color:#888;">Sin registros aún</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Entrenamientos -->
+      <section id="training" class="app-section hidden">
+        <h1>Seguimiento de Entrenamientos</h1>
+        <div class="card">
+          <h3>Registrar tarea</h3>
+          <form id="training-form">
+            <div class="grid-2">
+              <div class="form-group"><label for="train-trainer">Entrenador *</label><input type="text" id="train-trainer" required></div>
+              <div class="form-group"><label for="train-client">Cliente *</label><input type="text" id="train-client" required></div>
+              <div class="form-group"><label for="train-cedula">Cédula</label><input type="text" id="train-cedula"></div>
+              <div class="form-group"><label for="train-type">Tipo *</label><select id="train-type" required><option value="plan">Plan</option><option value="valoracion">Valoración</option></select></div>
+              <div class="form-group"><label for="train-date">Fecha *</label><input type="date" id="train-date" required></div>
+              <div class="form-group"><label for="train-interval">Intervalo (días)</label><select id="train-interval"><option value="30">30</option><option value="45">45</option><option value="60">60</option><option value="90">90</option></select></div>
+              <div class="form-group"><label for="train-notes">Notas</label><textarea id="train-notes" rows="2"></textarea></div>
+            </div>
+            <div class="actions"><button type="submit" class="btn-primary">Registrar tarea</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Entrenador</th><th>Cliente</th><th>Cédula</th><th>Tipo</th><th>Fecha</th><th>Próxima</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="8" style="text-align:center; color:#888;">Sin registros aún</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Canchas -->
+      <section id="courts" class="app-section hidden">
+        <h1>Reservas de Canchas</h1>
+        <div class="card">
+          <h3>Reservar cancha</h3>
+          <form id="court-form">
+            <div class="grid-2">
+              <div class="form-group"><label for="court-name">Nombre *</label><input type="text" id="court-name" required></div>
+              <div class="form-group"><label for="court-cedula">Cédula *</label><input type="text" id="court-cedula" required></div>
+              <div class="form-group"><label for="court-email">Email *</label><input type="email" id="court-email" required></div>
+              <div class="form-group"><label for="court-phone">Teléfono</label><input type="tel" id="court-phone"></div>
+              <div class="form-group"><label for="court-service">Servicio</label><select id="court-service"><option value="futbol8">Fútbol 8</option><option value="entrenamiento">Entrenamiento</option><option value="torneo">Torneo</option><option value="otro">Otro</option></select></div>
+              <div class="form-group"><label for="court-payment">Método de pago</label><select id="court-payment"><option value="efectivo">Efectivo</option><option value="electronico">Electrónico (-5% L-V)</option></select></div>
+              <div class="form-group"><label for="court-court">Cancha *</label><select id="court-court" required><option value="">Selecciona cancha</option><option value="1">Cancha 1</option><option value="2">Cancha 2</option><option value="3">Cancha 3</option></select></div>
+              <div class="form-group"><label for="court-date">Fecha *</label><input type="date" id="court-date" required></div>
+            </div>
+            <div class="actions"><button type="submit" class="btn-primary">Confirmar reserva(s)</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Nombre</th><th>Email</th><th>Pago</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="8" style="text-align:center; color:#888;">Sin reservas aún</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Reportes -->
+      <section id="reports" class="app-section hidden">
+        <h1>Reportes y Estadísticas</h1>
+        <div class="card">
+          <h3>Generar reporte</h3>
+          <form style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+            <div class="form-group"><label for="report-from">Desde:</label><input type="date" id="report-from"></div>
+            <div class="form-group"><label for="report-to">Hasta:</label><input type="date" id="report-to"></div>
+            <button type="button" class="btn-primary">Generar</button>
+            <button type="button" class="btn-secondary">Exportar Excel</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Vencimientos del mes</h3>
+          <table>
+            <thead><tr><th>Cédula</th><th>Nombre</th><th>Plan</th><th>Vencimiento</th><th>Días</th><th>Estado</th><th>Email</th></tr></thead>
+            <tbody><tr><td colspan="7" style="text-align:center; color:#888;">Sin datos</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Configuración -->
+      <section id="config" class="app-section hidden">
+        <h1>Configuración</h1>
+        <div class="card">
+          <h3>Política de cancelaciones</h3>
+          <form id="policy-form">
+            <div class="grid-2">
+              <div class="form-group"><label for="cancel-hours">Horas anticipación sin penalidad</label><input type="number" id="cancel-hours" value="24"></div>
+              <div class="form-group"><label for="cancel-late-pct">% penalización cancelación tardía</label><input type="number" id="cancel-late-pct" value="20"></div>
+              <div class="form-group"><label for="cancel-noshow-pct">% penalización no-show</label><input type="number" id="cancel-noshow-pct" value="50"></div>
+            </div>
+            <div class="actions"><button type="submit" class="btn-primary">Guardar política</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Reiniciar aplicación</h3>
+          <p style="color:var(--danger); margin:0.5rem 0;">⚠️ Acción irreversible. Descargue el backup primero.</p>
+          <button id="download-backup" class="btn-secondary">Paso 1: Descargar copia de seguridad</button>
+          <div style="margin-top:1rem;">
+            <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;"><input type="checkbox" id="confirm-reset"> Borrar todos los datos</label>
+            <input type="text" id="reset-confirm-text" placeholder="Escriba CONFIRMAR para habilitar">
+            <button id="execute-reset" class="btn-danger" disabled style="margin-top:0.5rem;">Borrar datos</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 🪟 MODALES -->
+  <div id="modal-client-detail" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <h3 id="modal-title">Ficha del cliente</h3>
+      <p style="margin:1rem 0; color:#6c757d;">Este cliente no tiene email registrado.</p>
+      <div class="actions">
+        <button class="btn-primary">Editar datos personales</button>
+        <button class="btn-secondary" onclick="closeModal('modal-client-detail')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 🔑 Auth simulation
+    const authScreen = document.getElementById('auth-screen');
+    const mainApp = document.getElementById('main-app');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const forgotForm = document.getElementById('forgot-form');
+
+    loginForm.addEventListener('submit', e => { e.preventDefault(); authScreen.classList.add('hidden'); mainApp.classList.remove('hidden'); });
+    document.getElementById('show-register').addEventListener('click', e => { e.preventDefault(); loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
+    document.getElementById('show-forgot').addEventListener('click', e => { e.preventDefault(); loginForm.classList.add('hidden'); forgotForm.classList.remove('hidden'); });
+    document.getElementById('back-to-login').addEventListener('click', () => { forgotForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+    document.getElementById('back-to-login-reg').addEventListener('click', () => { registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+    document.getElementById('logout-btn').addEventListener('click', () => { mainApp.classList.add('hidden'); authScreen.classList.remove('hidden'); loginForm.reset(); });
+
+    // 🧭 Navigation
+    function showSection(id) {
+      document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.target === id));
+    }
+    document.querySelectorAll('.nav-link').forEach(a => {
+      a.addEventListener('click', e => { e.preventDefault(); showSection(a.dataset.target); });
+    });
+
+    // 🪟 Modals
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    window.showClientDetail = () => document.getElementById('modal-client-detail').classList.remove('hidden');
+
+    // ⚠️ Reset safety
+    document.getElementById('reset-confirm-text').addEventListener('input', e => {
+      document.getElementById('execute-reset').disabled = e.target.value.trim() !== 'CONFIRMAR';
+    });
+
+    // 📝 Forms (placeholder)
+    document.querySelectorAll('form').forEach(f => f.addEventListener('submit', e => { e.preventDefault(); alert('✅ Datos validados. Conecta esto a tu backend para persistir.'); }));
+  </script>
+</body>
+</html>
